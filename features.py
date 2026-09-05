@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, roc_auc_score
+from diag import add_diag_groups
 
 NUMERIC = [
     "time_in_hospital", "num_lab_procedures", "num_procedures",
@@ -18,6 +19,7 @@ CATEGORICAL = [
     "admission_type_id", "discharge_disposition_id", "admission_source_id",
     "A1Cresult", "max_glu_serum",
     "insulin", "change", "diabetesMed",
+    "diag_1_group", "diag_2_group", "diag_3_group",
 ]
 
 
@@ -27,6 +29,7 @@ def load():
     # ID columns are codes, not quantities — treat as categories
     for col in ["admission_type_id", "discharge_disposition_id", "admission_source_id"]:
         df[col] = df[col].astype(str)
+    df = add_diag_groups(df)
     return df, y
 
 
