@@ -77,8 +77,8 @@ sensible: where a patient goes after release shapes whether they come back.
 Subgroup PR-AUC on the held-out test set:
 
 - **Patients aged 90–100 (n=547): PR-AUC 0.194, ROC-AUC 0.540** — close to
-  chance, against ~0.65 ROC-AUC for other age bands. This is not a base-rate
-  artifact: that group has the *highest* base rate of any age band (12.8%).
+  chance, against ~0.65 ROC-AUC for other age bands. This does not appear to be a
+  base-rate artifact: that group has the *highest* base rate of any age band (12.8%).
   The model is weakest at ranking the patients most likely to be readmitted.
   Plausibly the features here don't capture what drives readmission in the
   very elderly — frailty, social support, care setting.
