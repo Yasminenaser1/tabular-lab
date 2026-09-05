@@ -48,7 +48,7 @@ def build_preprocessor():
         ]), NUMERIC),
         ("cat", Pipeline([
             ("impute", SimpleImputer(strategy="constant", fill_value="MISSING")),
-            ("onehot", OneHotEncoder(handle_unknown="ignore", min_frequency=20)),
+            ("onehot", OneHotEncoder(handle_unknown="ignore", min_frequency=20, sparse_output=False)),
         ]), CATEGORICAL),
     ])
 
