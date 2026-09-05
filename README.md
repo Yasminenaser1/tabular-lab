@@ -55,7 +55,7 @@ being an artifact of one split.
 
 ROC-AUC for the boosting model on the held-out test set is 0.669 — much higher than PR-AUC because
 the large negative class flatters the false-positive rate. PR-AUC is the
-honest metric on an 11% problem.
+honest metric at this base rate.
 
 ## What drives the model
 
