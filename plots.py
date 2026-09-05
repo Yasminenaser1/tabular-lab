@@ -27,11 +27,11 @@ fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
 
 # 1. CV comparison with error bars
 names = ["Dummy", "Logistic", "Boosting"]
-means = [0.1116, 0.2144, 0.2288]
-stds = [0.0014, 0.0054, 0.0054]
+means = [0.1139, 0.2153, 0.2306]
+stds = [0.0019, 0.0048, 0.0040]
 axes[0].bar(names, means, yerr=stds, capsize=6,
             color=["#bbb", "#7aa6c2", "#2b6a8f"])
-axes[0].axhline(0.1116, ls="--", c="k", lw=1, alpha=0.5)
+axes[0].axhline(0.1139, ls="--", c="k", lw=1, alpha=0.5)
 axes[0].set_ylabel("PR-AUC")
 axes[0].set_title("5-fold GroupKFold CV\n(dashed = base rate)")
 

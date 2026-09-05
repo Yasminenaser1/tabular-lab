@@ -30,6 +30,11 @@ def load():
     for col in ["admission_type_id", "discharge_disposition_id", "admission_source_id"]:
         df[col] = df[col].astype(str)
     df = add_diag_groups(df)
+    # Expired (11,19,20,21) and hospice (13,14) discharges cannot be
+    # readmitted — structural negatives that inflate any score.
+    keep = ~df["discharge_disposition_id"].astype(int).isin([11, 13, 14, 19, 20, 21])
+    df = df[keep].reset_index(drop=True)
+    y = y[keep.values].reset_index(drop=True)
     return df, y
 
 
