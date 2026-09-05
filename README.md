@@ -1,7 +1,7 @@
 # Hospital Readmission Prediction
 
 Predicting 30-day readmission for diabetic patients using the UCI Diabetes
-130-US Hospitals dataset — 101,766 encounters across 71,518 unique patients,
+130-US Hospitals dataset — 101,766 encounters across 71,518 unique patients (99,343 after exclusions, below),
 de-identified real clinical records from 130 US hospitals (1999–2008),
 CC BY 4.0.
 
@@ -16,8 +16,8 @@ can be read as actual risk, not just a ranking.
 
 ## Why this problem is harder than it looks
 
-**Class imbalance.** Only 11.2% of encounters are 30-day readmissions.
-Accuracy is meaningless here — predicting "no" for everyone scores 88.8%.
+**Class imbalance.** Only 11.4% of encounters are 30-day readmissions.
+Accuracy is meaningless here — predicting "no" for everyone scores 88.6%.
 All results are reported as PR-AUC.
 
 **Patient leakage.** Patients appear multiple times (~30,000 repeat
@@ -53,7 +53,7 @@ Boosting beats logistic regression in **5 of 5 folds** (mean gain 0.0154,
 worst fold +0.0087), so the improvement survives resampling rather than
 being an artifact of one split.
 
-ROC-AUC for the boosting model is 0.669 — much higher than PR-AUC because
+ROC-AUC for the boosting model on the held-out test set is 0.669 — much higher than PR-AUC because
 the large negative class flatters the false-positive rate. PR-AUC is the
 honest metric on an 11% problem.
 
@@ -85,11 +85,14 @@ Subgroup PR-AUC on the held-out test set:
 - **African American patients (n=3,707): PR-AUC 0.190 vs 0.238 for Caucasian
   patients (n=14,886)** at similar base rates (10.7% vs 11.5%). Both samples
   are large enough for this gap to be a stable estimate.
-- **Patients with unrecorded race (n=418): PR-AUC 0.168** — the weakest
-  recorded-demographic group.
+- **Patients with race unrecorded (n=418): PR-AUC 0.168** — the weakest
+  group overall, though see the caveat below.
 
-Subgroups below ~500 encounters (~40 positives) produce unstable PR-AUC
-estimates and are not interpreted here, even where they score well.
+Subgroups below roughly 500 encounters (~40 positives) produce unstable
+PR-AUC estimates. That includes the unrecorded-race group above and puts the
+90–100 band close to the line, so both should be read as indicative rather
+than settled. Small subgroups that score *well* (e.g. ages 20–30, PR-AUC
+0.537 on n=388) are not reported as strengths for the same reason.
 
 **This model should not be deployed for the 90+ population, and the
 performance gap across race groups would need to be addressed before any
