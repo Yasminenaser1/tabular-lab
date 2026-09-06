@@ -99,28 +99,6 @@ performance gap across race groups would need to be addressed before any
 clinical use.** Reporting subgroup performance matters on real patient data
 where race, gender, and age are present.
 
-## Reproducing
-
-```bash
-python3 -m venv venv && source venv/bin/activate
-pip install pandas scikit-learn matplotlib
-# download dataset id 296 from UCI into data/
-
-python explore.py          # split integrity + data audit
-python baseline.py         # dummy vs. logistic on numeric features
-python features.py         # + categorical encoding and ICD-9 grouping
-python boost.py            # gradient boosting
-python cv.py               # 5-fold GroupKFold
-python error_analysis.py   # calibration, subgroups, permutation importance
-python plots.py            # figures/results.png
-```
-
-## Data
-
-Clore, J., Cios, K., DeShazo, J., & Strack, B. (2014). *Diabetes 130-US
-Hospitals for Years 1999-2008*. UCI Machine Learning Repository.
-https://doi.org/10.24432/C5230J
-
 ## API
 
 A FastAPI service wraps the trained pipeline:
@@ -152,3 +130,28 @@ uvicorn api:app --reload --port 8000
 
 Built with scikit-learn 1.9.0; the pickled pipeline may not load under a
 different version.
+
+## Reproducing
+
+```bash
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+# download dataset id 296 from UCI into data/
+
+python explore.py          # split integrity + data audit
+python baseline.py         # dummy vs. logistic on numeric features
+python features.py         # + categorical encoding and ICD-9 grouping
+python boost.py            # gradient boosting
+python cv.py               # 5-fold GroupKFold
+python error_analysis.py   # calibration, subgroups, permutation importance
+python plots.py            # figures/results.png
+python save_model.py       # fit on all data -> models/pipeline.joblib
+python build_schema.py     # field metadata -> models/schema.json
+```
+
+## Data
+
+Clore, J., Cios, K., DeShazo, J., & Strack, B. (2014). *Diabetes 130-US
+Hospitals for Years 1999-2008*. UCI Machine Learning Repository.
+https://doi.org/10.24432/C5230J
+
