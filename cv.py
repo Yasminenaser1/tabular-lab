@@ -4,6 +4,7 @@ from sklearn.model_selection import GroupKFold
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier
+from xgboost import XGBClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import average_precision_score
 from features import load, build_preprocessor, NUMERIC, CATEGORICAL
@@ -15,6 +16,14 @@ groups = df["patient_nbr"]
 def make(kind):
     if kind == "dummy":
         return DummyClassifier(strategy="prior")
+    if kind == "xgb":
+        clf = XGBClassifier(
+            n_estimators=300, learning_rate=0.05, max_depth=6,
+            subsample=0.8, colsample_bytree=0.8,
+            reg_lambda=1.0, eval_metric="aucpr",
+            random_state=42, n_jobs=-1,
+        )
+        return Pipeline([("prep", build_preprocessor()), ("clf", clf)])
     clf = (LogisticRegression(max_iter=2000) if kind == "logreg"
            else HistGradientBoostingClassifier(
                max_iter=300, learning_rate=0.05, max_leaf_nodes=31,
@@ -25,7 +34,7 @@ def make(kind):
 cv = GroupKFold(n_splits=5)
 results = {}
 
-for kind in ["dummy", "logreg", "boost"]:
+for kind in ["dummy", "logreg", "boost", "xgb"]:
     scores = []
     for fold, (tr, te) in enumerate(cv.split(X, y, groups), 1):
         assert not (set(groups.iloc[tr]) & set(groups.iloc[te]))
