@@ -120,3 +120,35 @@ python plots.py            # figures/results.png
 Clore, J., Cios, K., DeShazo, J., & Strack, B. (2014). *Diabetes 130-US
 Hospitals for Years 1999-2008*. UCI Machine Learning Repository.
 https://doi.org/10.24432/C5230J
+
+## API
+
+A FastAPI service wraps the trained pipeline:
+
+- `GET /schema` — field names and valid values, so a client can build its form from the model
+- `GET /metadata` — model version and CV performance
+- `POST /predict` — returns a probability, the baseline rate, lift, and a risk band
+
+**Known limitations are returned with every prediction.** If a request falls
+into a subgroup where the model underperforms, the response includes a caveat:
+
+```json
+{
+  "probability": 0.349,
+  "lift_vs_baseline": 3.06,
+  "band": "high",
+  "caveats": ["Ages 90-100: model performs near chance for this group (ROC-AUC 0.540). Not suitable for use here."]
+}
+```
+
+A consumer is warned at the point of use rather than being expected to have
+read the documentation.
+
+Run it with:
+
+```bash
+uvicorn api:app --reload --port 8000
+```
+
+Built with scikit-learn 1.X.X; the pickled pipeline may not load under a
+different version.
