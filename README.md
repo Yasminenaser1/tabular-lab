@@ -150,5 +150,5 @@ Run it with:
 uvicorn api:app --reload --port 8000
 ```
 
-Built with scikit-learn PUT_VERSION_HERE; the pickled pipeline may not load under a
+Built with scikit-learn 1.9.0; the pickled pipeline may not load under a
 different version.
