@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Readmission Risk</title>
+  <script>
+    // Apply the saved theme before first paint, so a reload never flashes the wrong theme.
+    try {
+      const t = localStorage.getItem("theme");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
 </head>
@@ -280,7 +287,11 @@
       for (const b of document.querySelectorAll("[data-back]")) {
         b.addEventListener("click", () => goTo(currentStep - 1));
       }
-      document.querySelector("[data-restart]").addEventListener("click", () => location.reload());
+      document.querySelector("[data-restart]").addEventListener("click", () => {
+        applyExample(form, schema, {});          // back to schema defaults
+        document.getElementById("result").innerHTML = "";
+        goTo(1);
+      });
 
       let savedTheme = "system";
       try { savedTheme = localStorage.getItem("theme") || "system"; } catch {}
