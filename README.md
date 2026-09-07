@@ -1,5 +1,9 @@
 # Hospital Readmission Prediction
 
+[![CI](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml)
+
+**Live demo:** https://readmission-risk.onrender.com — free tier, so the first load after idle takes about a minute to wake up.
+
 Predicting 30-day readmission for diabetic patients using the UCI Diabetes
 130-US Hospitals dataset — 101,766 encounters across 71,518 unique patients (99,343 after exclusions, below),
 de-identified real clinical records from 130 US hospitals (1999–2008),
