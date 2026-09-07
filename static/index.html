@@ -88,12 +88,37 @@
       }
     }
 
-    const label = (name) => name.replaceAll("_", " ");
+    // Clinician-facing labels; the raw feature name is still shown underneath.
+    const LABELS = {
+      time_in_hospital: "Days in hospital",
+      num_lab_procedures: "Lab procedures",
+      num_procedures: "Procedures",
+      num_medications: "Medications",
+      number_outpatient: "Outpatient visits (prior year)",
+      number_emergency: "Emergency visits (prior year)",
+      number_inpatient: "Inpatient stays (prior year)",
+      number_diagnoses: "Diagnoses",
+      race: "Race",
+      gender: "Gender",
+      age: "Age band",
+      admission_type_id: "Admission type (code)",
+      discharge_disposition_id: "Discharge destination",
+      admission_source_id: "Admission source (code)",
+      A1Cresult: "HbA1c result",
+      max_glu_serum: "Glucose serum",
+      insulin: "Insulin",
+      change: "Medication changed",
+      diabetesMed: "On diabetes medication",
+      diag_1_group: "Primary diagnosis",
+      diag_2_group: "Secondary diagnosis",
+      diag_3_group: "Additional diagnosis",
+    };
+    const label = (name) => LABELS[name] ?? name.replaceAll("_", " ");
     const pct = (p) => (p * 100).toFixed(1) + "%";
 
     function numericField(name, info) {
       const wrap = document.createElement("label");
-      wrap.textContent = label(name);
+      wrap.innerHTML = `<span class="lbl">${label(name)}</span><span class="key">${name}</span>`;
       const input = document.createElement("input");
       input.type = "number";
       input.name = name;
@@ -108,7 +133,7 @@
 
     function categoricalField(name, info) {
       const wrap = document.createElement("label");
-      wrap.textContent = label(name);
+      wrap.innerHTML = `<span class="lbl">${label(name)}</span><span class="key">${name}</span>`;
       const select = document.createElement("select");
       select.name = name;
       if (NULLABLE.has(name)) {

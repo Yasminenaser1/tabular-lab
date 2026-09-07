@@ -121,3 +121,7 @@ button:hover { background: var(--accent-ink); }
 .examples span { font-size: .85rem; color: var(--muted); margin-right: .25rem; }
 .examples button { font-size: .82rem; padding: .45rem .8rem; }
 @media (prefers-reduced-motion: reduce) { .meter-fill, .progress-bar { transition: none; } }
+
+/* ---- field labels: readable name + raw feature key ---- */
+.lbl { color: var(--ink); }
+.key { font: 400 .68rem/1 ui-monospace, Menlo, monospace; color: var(--muted); opacity: .8; }
