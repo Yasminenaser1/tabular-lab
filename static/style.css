@@ -1,14 +1,26 @@
 :root {
-  --bg: #0b1220; --card: #131c2e; --card-2: #1a2540;
-  --ink: #e8edf6; --muted: #8d99b2; --line: #24304a;
-  --accent: #4f8cff; --accent-ink: #7eaaff; --accent-soft: #16233f;
-  --good: #22c55e; --warning: #fab219; --critical: #ef4444; --critical-soft: #2a1519;
-  --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 20px 40px -24px rgba(0,0,0,.8);
+  color-scheme: light dark;
+  --bg:            light-dark(#f3f5f9, #0b1220);
+  --card:          light-dark(#ffffff, #131c2e);
+  --card-2:        light-dark(#f1f4f9, #1a2540);
+  --ink:           light-dark(#131a2a, #e8edf6);
+  --muted:         light-dark(#5d6b82, #8d99b2);
+  --line:          light-dark(#dfe4ee, #24304a);
+  --accent:        light-dark(#2f6fed, #4f8cff);
+  --accent-ink:    light-dark(#1f56c7, #7eaaff);
+  --accent-soft:   light-dark(#e6eeff, #16233f);
+  --good:          light-dark(#16a34a, #22c55e);
+  --warning:       light-dark(#d97706, #fab219);
+  --critical:      light-dark(#dc2626, #ef4444);
+  --critical-soft: light-dark(#fdeeee, #2a1519);
+  --shadow: light-dark(0 12px 32px -20px rgba(19,26,42,.35), 0 20px 40px -24px rgba(0,0,0,.8));
   --display: "Outfit", system-ui, -apple-system, sans-serif;
   --body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark; }
+
 * { box-sizing: border-box; }
-html { color-scheme: dark; }
 body {
   margin: 0; padding: 2.5rem 1.25rem 4rem; min-height: 100vh;
   background: var(--bg); color: var(--ink); font: 15px/1.6 var(--body);
@@ -17,6 +29,17 @@ body {
 main { max-width: 760px; margin: 0 auto; }
 h1 { font: 700 2.4rem/1.1 var(--display); letter-spacing: -.02em; margin: 0 0 .35rem; }
 #status { color: var(--muted); margin: 0 0 1.75rem; }
+
+/* ---- theme switch ---- */
+.theme { display: flex; justify-content: flex-end; gap: .25rem; margin-bottom: 1rem; }
+.theme button {
+  font: 600 .78rem var(--body); color: var(--muted); background: var(--card);
+  border: 1px solid var(--line); border-radius: 6px; padding: .35rem .7rem;
+}
+.theme button:hover { color: var(--ink); background: var(--card-2); }
+.theme button.is-active { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+/* ---- form ---- */
 fieldset {
   border: 1px solid var(--line); border-radius: 12px; background: var(--card);
   padding: 1.25rem 1.5rem 1.5rem; margin: 0 0 1.25rem;
@@ -38,10 +61,33 @@ button {
   border: 0; border-radius: 8px; padding: .7rem 1.5rem; cursor: pointer;
 }
 button:hover { background: var(--accent-ink); }
-#result { margin-top: 1.75rem; }
+.ghost { background: transparent; color: var(--accent-ink); border: 1px solid var(--line); }
+.ghost:hover { background: var(--accent-soft); }
+
+/* ---- wizard ---- */
+.steps { display: flex; gap: .5rem; margin: 0 0 .6rem; }
+.step {
+  flex: 1; font: 600 .8rem var(--body); color: var(--muted);
+  padding: .5rem .75rem; border-radius: 8px; border: 1px solid var(--line); background: var(--card);
+  display: flex; align-items: center; gap: .5rem;
+}
+.step b {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  font: 700 .72rem var(--body); background: var(--card-2); color: var(--muted);
+}
+.step.is-active { color: var(--ink); border-color: var(--accent); }
+.step.is-active b { background: var(--accent); color: #fff; }
+.step.is-done b { background: var(--good); color: #fff; }
+.progress { height: 4px; border-radius: 999px; background: var(--card-2); margin: 0 0 1.5rem; overflow: hidden; }
+.progress-bar { height: 100%; width: 33%; background: var(--accent); transition: width .3s ease; }
+.panel[hidden] { display: none; }
+.actions { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: .25rem; }
+
+/* ---- result ---- */
+#result { margin-top: .25rem; }
 .card {
   border: 1px solid var(--line); border-radius: 12px; background: var(--card);
-  padding: 1.75rem 2rem; box-shadow: var(--shadow);
+  padding: 1.75rem 2rem; box-shadow: var(--shadow); margin-bottom: 1.25rem;
 }
 .hero { font: 700 4rem/1 var(--display); letter-spacing: -.03em; }
 .compare { color: var(--muted); margin: .4rem 0 1rem; }

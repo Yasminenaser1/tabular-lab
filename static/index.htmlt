@@ -9,52 +9,27 @@
 </head>
 <body>
 <main>
-  <div class="theme" role="group" aria-label="Theme">
+  <h1>30-day readmission risk</h1>
+     <div class="theme" role="group" aria-label="Theme">
     <button type="button" data-theme-choice="light">Light</button>
     <button type="button" data-theme-choice="system">System</button>
     <button type="button" data-theme-choice="dark">Dark</button>
   </div>
-  <h1>30-day readmission risk</h1>
   <p id="status">Loading model schema…</p>
 
-  <nav class="steps" id="steps">
-    <span class="step is-active" data-step="1"><b>1</b> Encounter</span>
-    <span class="step" data-step="2"><b>2</b> Patient</span>
-    <span class="step" data-step="3"><b>3</b> Result</span>
-  </nav>
-  <div class="progress"><div class="progress-bar" id="progress"></div></div>
-
   <form id="form">
-    <section class="panel" data-panel="1">
-      <fieldset>
-        <legend>Encounter</legend>
-        <div id="numeric" class="grid"></div>
-      </fieldset>
-      <div class="actions">
-        <span></span>
-        <button type="button" data-next>Next: patient →</button>
-      </div>
-    </section>
-
-    <section class="panel" data-panel="2" hidden>
-      <fieldset>
-        <legend>Patient &amp; clinical</legend>
-        <div id="categorical" class="grid"></div>
-      </fieldset>
-      <div class="actions">
-        <button type="button" class="ghost" data-back>← Back</button>
-        <button type="submit">Predict →</button>
-      </div>
-    </section>
-
-    <section class="panel" data-panel="3" hidden>
-      <div id="result"></div>
-      <div class="actions">
-        <button type="button" class="ghost" data-back>← Edit patient</button>
-        <button type="button" data-restart>Start over</button>
-      </div>
-    </section>
+    <fieldset>
+      <legend>Encounter</legend>
+      <div id="numeric" class="grid"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Patient &amp; clinical</legend>
+      <div id="categorical" class="grid"></div>
+    </fieldset>
+    <button type="submit">Predict</button>
   </form>
+
+  <section id="result"></section>
 </main>
 
   <script>
@@ -156,41 +131,9 @@
       if (!res.ok) {
         document.getElementById("result").innerHTML =
           `<p class="error">Error ${res.status}: ${data.detail}</p>`;
-      } else {
-        render(data);
+        return;
       }
-      goTo(3);
-    }
-
-    // Wizard: show one panel at a time; keep the tabs and progress bar in sync.
-    let currentStep = 1;
-    function goTo(step) {
-      currentStep = step;
-      for (const p of document.querySelectorAll(".panel")) {
-        p.hidden = Number(p.dataset.panel) !== step;
-      }
-      for (const s of document.querySelectorAll(".step")) {
-        const n = Number(s.dataset.step);
-        s.classList.toggle("is-active", n === step);
-        s.classList.toggle("is-done", n < step);
-      }
-      document.getElementById("progress").style.width = (step / 3 * 100) + "%";
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    function panelIsValid(step) {
-      const fields = document.querySelectorAll(`.panel[data-panel="${step}"] :is(input, select)`);
-      for (const el of fields) if (!el.reportValidity()) return false;
-      return true;
-    }
-
-    // Theme: "system" leaves it to the OS; "light"/"dark" force it via color-scheme.
-    function applyTheme(mode) {
-      if (mode === "system") delete document.documentElement.dataset.theme;
-      else document.documentElement.dataset.theme = mode;
-      for (const b of document.querySelectorAll("[data-theme-choice]")) {
-        b.classList.toggle("is-active", b.dataset.themeChoice === mode);
-      }
-      try { localStorage.setItem("theme", mode); } catch {}
+      render(data);
     }
 
     async function main() {
@@ -204,25 +147,7 @@
         `${nNum} numeric + ${nCat} categorical inputs`;
 
       buildForm(schema);
-
-      const form = document.getElementById("form");
-      form.addEventListener("submit", predict);
-      document.querySelector("[data-next]").addEventListener("click", () => {
-        if (panelIsValid(1)) goTo(2);
-      });
-      for (const b of document.querySelectorAll("[data-back]")) {
-        b.addEventListener("click", () => goTo(currentStep - 1));
-      }
-      document.querySelector("[data-restart]").addEventListener("click", () => location.reload());
-
-      let savedTheme = "system";
-      try { savedTheme = localStorage.getItem("theme") || "system"; } catch {}
-      applyTheme(savedTheme);
-      for (const b of document.querySelectorAll("[data-theme-choice]")) {
-        b.addEventListener("click", () => applyTheme(b.dataset.themeChoice));
-      }
-
-      goTo(1);
+      document.getElementById("form").addEventListener("submit", predict);
     }
 
     main().catch(err => {
