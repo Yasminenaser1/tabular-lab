@@ -5,6 +5,8 @@ import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 PIPELINE = joblib.load("models/pipeline.joblib")
 META = json.loads(Path("models/metadata.json").read_text())
@@ -12,6 +14,12 @@ SCHEMA = json.loads(Path("models/schema.json").read_text())
 FEATURES = META["numeric"] + META["categorical"]
 
 app = FastAPI(title="Readmission Risk", version="1.0")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse("static/index.html")
 
 
 class PredictRequest(BaseModel):
