@@ -1,13 +1,3 @@
----
-title: Hospital Readmission Risk
-emoji: 🏥
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # Hospital Readmission Prediction
 
 Predicting 30-day readmission for diabetic patients using the UCI Diabetes
