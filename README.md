@@ -4,7 +4,6 @@
 
 **Live demo:** https://readmission-risk.onrender.com — Render free tier, kept warm by a scheduled GitHub Actions ping.
 
-![web UI](figures/ui.png)
 
 Predicting 30-day readmission for diabetic patients using the UCI Diabetes
 130-US Hospitals dataset — 101,766 encounters across 71,518 unique patients (99,343 after exclusions, below),
