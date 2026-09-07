@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml)
 
-**Live demo:** https://readmission-risk.onrender.com — free tier, so the first load after idle takes about a minute to wake up.
+**Live demo:** https://readmission-risk.onrender.com — Render free tier, kept warm by a scheduled GitHub Actions ping.
+
+![web UI](figures/ui.png)
 
 Predicting 30-day readmission for diabetic patients using the UCI Diabetes
 130-US Hospitals dataset — 101,766 encounters across 71,518 unique patients (99,343 after exclusions, below),
@@ -126,6 +128,12 @@ into a subgroup where the model underperforms, the response includes a caveat:
 A consumer is warned at the point of use rather than being expected to have
 read the documentation.
 
+The web UI at `/` is a three-step flow generated from `/schema` — fields,
+valid values and defaults come from the model, not a hand-written form — and
+renders those caveats in red above the score. Three example patients let a
+visitor see the model react without filling in 22 fields. Light, dark and
+system themes.
+
 Run it with:
 
 ```bash
@@ -134,6 +142,23 @@ uvicorn api:app --reload --port 8000
 
 Built with scikit-learn 1.9.0; the pickled pipeline may not load under a
 different version.
+
+## Tests & deployment
+
+`tests/test_api.py` exercises the service without the dataset: schema/model
+agreement, the 422 on missing features, the subgroup caveats, and a behavioral
+check that more prior inpatient stays raise predicted risk — a retrained model
+that got that backwards would fail CI. `tests/test_split.py` needs the data
+and skips when it is absent. GitHub Actions runs the suite on every push.
+
+The `Dockerfile` builds a slim image from `requirements-api.txt` (no plotting
+or download dependencies) and reads the port from `PORT`; Render deploys it
+from `main` automatically.
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
 
 ## Reproducing
 
