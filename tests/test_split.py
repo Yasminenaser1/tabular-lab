@@ -1,5 +1,12 @@
+from pathlib import Path
+
 import pytest
 from features import load, split, build_preprocessor, NUMERIC, CATEGORICAL
+
+pytestmark = pytest.mark.skipif(
+    not Path("data/diabetic_data.csv").exists(),
+    reason="dataset not downloaded",
+)
 
 EXPIRED_HOSPICE = [11, 13, 14, 19, 20, 21]
 
