@@ -26,6 +26,12 @@
 
   <form id="form">
     <section class="panel" data-panel="1">
+      <div class="examples">
+        <span>Try an example:</span>
+        <button type="button" class="ghost" data-example="typical">Typical encounter</button>
+        <button type="button" class="ghost" data-example="frequent">Frequent readmitter</button>
+        <button type="button" class="ghost" data-example="elderly">Age 90+ (out of scope)</button>
+      </div>
       <fieldset>
         <legend>Encounter</legend>
         <div id="numeric" class="grid"></div>
@@ -62,6 +68,25 @@
     // Sending null lets the pipeline's imputer map it to the MISSING category,
     // the same way it was handled in training.
     const NULLABLE = new Set(["race", "A1Cresult", "max_glu_serum"]);
+
+    // The meter runs 0-50%: almost every real encounter lands below that.
+    const METER_MAX = 0.5;
+
+    // Example patients: only the listed fields change; everything else stays at its default.
+    const EXAMPLES = {
+      typical: {},
+      frequent: { number_inpatient: 4, number_emergency: 2, time_in_hospital: 7, num_medications: 22, insulin: "Up", change: "Ch" },
+      elderly: { age: "[90-100)", number_inpatient: 1, discharge_disposition_id: "3" },
+    };
+
+    function applyExample(form, schema, overrides) {
+      for (const el of form.elements) {
+        if (!el.name) continue;
+        const info = schema.numeric[el.name] ?? schema.categorical[el.name];
+        const base = el.type === "number" ? info.median : info.default;
+        el.value = el.name in overrides ? overrides[el.name] : base;
+      }
+    }
 
     const label = (name) => name.replaceAll("_", " ");
     const pct = (p) => (p * 100).toFixed(1) + "%";
@@ -132,6 +157,8 @@
              <p><strong>Do not rely on this score.</strong></p>
            </div>`
         : "";
+      const fill = Math.min(data.probability / METER_MAX, 1) * 100;
+      const base = (data.baseline_rate / METER_MAX) * 100;
       out.innerHTML = `
         <div class="card">
           <div class="hero">${pct(data.probability)}</div>
@@ -140,7 +167,16 @@
             ${data.lift_vs_baseline}× the ${pct(data.baseline_rate)} baseline
           </div>
           <span class="band band-${data.band}">${data.band} risk</span>
-          ${caveats}
+          <div class="meter band-${data.band}">
+            <div class="meter-track">
+              <div class="meter-fill" style="width:${fill}%"></div>
+              <div class="meter-base" style="left:${base}%" title="baseline ${pct(data.baseline_rate)}"></div>
+            </div>
+            <div class="meter-scale">
+              <span>0%</span><span class="base">baseline ${pct(data.baseline_rate)}</span><span>${pct(METER_MAX)}</span>
+            </div>
+          </div>
+          ${caveats || '<p class="clear">No subgroup caveats apply — this patient is within the population the model was validated on.</p>'}
         </div>`;
     }
 
@@ -207,6 +243,12 @@
 
       const form = document.getElementById("form");
       form.addEventListener("submit", predict);
+      for (const b of document.querySelectorAll("[data-example]")) {
+        b.addEventListener("click", () => {
+          applyExample(form, schema, EXAMPLES[b.dataset.example]);
+          form.requestSubmit();
+        });
+      }
       document.querySelector("[data-next]").addEventListener("click", () => {
         if (panelIsValid(1)) goTo(2);
       });

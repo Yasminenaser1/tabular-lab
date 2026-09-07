@@ -106,3 +106,18 @@ button:hover { background: var(--accent-ink); }
 .caveats h3 { margin: 0 0 .4rem; font: 700 1rem var(--body); }
 .caveats p { margin: .3rem 0; }
 .error { color: var(--critical); font-weight: 600; }
+
+/* ---- risk meter ---- */
+.meter { margin-top: 1.25rem; }
+.meter-track { position: relative; height: 10px; border-radius: 999px; background: var(--card-2); }
+.meter-fill { height: 100%; border-radius: 999px; background: var(--dot, var(--accent)); transition: width .5s ease; }
+.meter-base { position: absolute; top: -5px; width: 2px; height: 20px; background: var(--ink); opacity: .6; }
+.meter-scale { display: flex; justify-content: space-between; margin-top: .4rem; font-size: .72rem; color: var(--muted); }
+.meter-scale .base { color: var(--ink); font-weight: 600; }
+.clear { color: var(--muted); margin-top: 1.25rem; }
+
+/* ---- example patients ---- */
+.examples { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: 1rem; }
+.examples span { font-size: .85rem; color: var(--muted); margin-right: .25rem; }
+.examples button { font-size: .82rem; padding: .45rem .8rem; }
+@media (prefers-reduced-motion: reduce) { .meter-fill, .progress-bar { transition: none; } }
