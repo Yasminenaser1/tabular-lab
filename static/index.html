@@ -4,64 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Readmission Risk</title>
-  <style>
-    :root {
-      --bg: #fafaf8; --card: #ffffff; --ink: #1a1a19; --muted: #5f5e5a;
-      --line: #dedcd6; --accent: #2f6fed;
-      --good: #0ca30c; --warning: #fab219; --critical: #d03b3b;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--ink);
-      font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-    }
-    main { max-width: 760px; margin: 0 auto; }
-    h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
-    #status { color: var(--muted); margin: 0 0 1.5rem; }
-    fieldset {
-      border: 1px solid var(--line); border-radius: 8px; background: var(--card);
-      padding: 1rem 1.25rem; margin: 0 0 1rem;
-    }
-    legend { font-weight: 600; padding: 0 .4rem; }
-    .grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: .75rem 1rem;
-    }
-    label { display: flex; flex-direction: column; gap: .2rem; font-size: .85rem; color: var(--muted); }
-    input, select {
-      font: inherit; color: var(--ink); padding: .4rem .5rem;
-      border: 1px solid var(--line); border-radius: 6px; background: #fff;
-    }
-    button {
-      font: inherit; font-weight: 600; color: #fff; background: var(--accent);
-      border: 0; border-radius: 6px; padding: .6rem 1.2rem; cursor: pointer;
-    }
-    #result { margin-top: 1.5rem; }
-    .card {
-      border: 1px solid var(--line); border-radius: 8px; background: var(--card);
-      padding: 1.25rem 1.5rem;
-    }
-    .hero { font-size: 48px; font-weight: 600; line-height: 1.1; }
-    .compare { color: var(--muted); margin: .25rem 0 .75rem; }
-    .band {
-      display: inline-flex; align-items: center; gap: .4rem;
-      font-weight: 600; font-size: .9rem;
-    }
-    .band::before {
-      content: ""; width: 10px; height: 10px; border-radius: 50%;
-      background: var(--dot);
-    }
-    .band-low { --dot: var(--good); }
-    .band-elevated { --dot: var(--warning); }
-    .band-high { --dot: var(--critical); }
-    .caveats {
-      margin-top: 1rem; padding: .9rem 1rem; border-radius: 6px;
-      border: 1px solid var(--critical); border-left-width: 6px; background: #fff6f6;
-    }
-    .caveats h3 { margin: 0 0 .4rem; font-size: 1rem; }
-    .caveats p { margin: .25rem 0; }
-    .error { color: var(--critical); }
-  </style>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
 </head>
 <body>
 <main>
