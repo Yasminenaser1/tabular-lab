@@ -154,6 +154,19 @@ fields are varied one at a time, so interactions between them are not
 captured. The ordering agrees with the permutation-importance table above,
 and a test asserts that prior inpatient stays stay the top driver.
 
+**Validated against SHAP.** `shap_compare.py` computes TreeExplainer SHAP values
+for 2,000 held-out patients (one-hot columns folded back into their source
+feature) and the counterfactual drivers for the same patients via the API's
+own `explain()`. Globally the two agree — Spearman rank correlation 0.70
+across all 22 features, and the same top three (`number_inpatient`,
+`discharge_disposition_id`, `diag_1_group`). Per patient they name the same
+lead driver 44% of the time (chance: 4.5%), which is the cost of ignoring
+interactions, quantified. SHAP stays out of the served image on purpose:
+it would add ~100 MB to a 512 MB container for a method the UI can't
+explain in one sentence.
+
+![SHAP vs counterfactual](figures/shap_vs_counterfactual.png)
+
 Run it with:
 
 ```bash
