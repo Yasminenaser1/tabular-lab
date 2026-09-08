@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import average_precision_score
-from features import load, build_preprocessor, NUMERIC, CATEGORICAL
+from features import load, split, build_preprocessor, NUMERIC, CATEGORICAL
 
 df, y = load()
 X = df[NUMERIC + CATEGORICAL]
@@ -36,9 +36,17 @@ for kind in ["logreg", "boost"]:
 best = max(scores, key=lambda k: scores[k][0])
 print(f"winner: {best}")
 
-final = make(best).fit(X, y)
+# Serve a model fit on the patient-grouped 80% split, and keep the 20% truly
+# held out so the app can report calibration on patients it has never seen.
+tr, te = split(df, y)
+final = make(best).fit(X.iloc[tr], y.iloc[tr])
 Path("models").mkdir(exist_ok=True)
 joblib.dump(final, "models/pipeline.joblib")
+
+holdout = X.iloc[te].sample(1000, random_state=7).copy()
+holdout["readmitted_30"] = y.iloc[holdout.index].values
+holdout.to_csv("models/holdout_sample.csv", index=False)
+print(f"held-out sample: {len(holdout)} rows, {holdout['readmitted_30'].mean():.3f} positive")
 
 meta = {
     "model": best,
@@ -49,6 +57,9 @@ meta = {
     "numeric": NUMERIC,
     "categorical": CATEGORICAL,
     "n_rows": int(len(X)),
+    "n_train": int(len(tr)),
+    "n_test": int(len(te)),
+    "trained_on": "80% patient-grouped split; 20% held out (models/holdout_sample.csv)",
     "trained_at": time.strftime("%Y-%m-%d %H:%M"),
 }
 Path("models/metadata.json").write_text(json.dumps(meta, indent=2))

@@ -34,5 +34,8 @@
     "diag_3_group"
   ],
   "n_rows": 99343,
-  "trained_at": "2026-09-05 20:08"
+  "n_train": 79541,
+  "n_test": 19802,
+  "trained_on": "80% patient-grouped split; 20% held out (models/holdout_sample.csv)",
+  "trained_at": "2026-09-08 11:03"
 }
