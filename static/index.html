@@ -77,6 +77,11 @@
     // the same way it was handled in training.
     const NULLABLE = new Set(["race", "A1Cresult", "max_glu_serum"]);
     let META = null;
+    let CODES = {};   // {field: {code: description}} from /schema, for the three ID fields
+    const describe = (field, value) => {
+      const d = CODES[field]?.[String(value)];
+      return d ? `${value} · ${d}` : value;
+    };
 
     // The meter runs 0-50%: almost every real encounter lands below that.
     const METER_MAX = 0.5;
@@ -152,7 +157,7 @@
       const options = [...info.options];
       if (options.every(o => !isNaN(o))) options.sort((a, b) => a - b);
       for (const opt of options) {
-        select.add(new Option(opt, opt, false, opt === info.default));
+        select.add(new Option(describe(name, opt), opt, false, opt === info.default));
       }
       wrap.appendChild(select);
       return wrap;
@@ -191,7 +196,7 @@
         const width = Math.round(Math.abs(d.delta) / max * 100);
         const value = d.value === null ? "not recorded" : d.value;
         return `<li class="driver driver-${dir}">
-          <span class="driver-name">${label(d.feature)}<small>${value} · typical ${d.default}</small></span>
+          <span class="driver-name">${label(d.feature)}<small>${describe(d.feature, value)} · typical ${describe(d.feature, d.default)}</small></span>
           <span class="driver-bar"><i style="width:${width}%"></i></span>
           <span class="driver-delta">${d.delta > 0 ? "+" : ""}${pts} pts</span>
         </li>`;
@@ -316,6 +321,7 @@
 
     async function main() {
       const schema = await fetch("/schema").then(r => r.json());
+      CODES = schema.labels ?? {};
       const meta = await fetch("/metadata").then(r => r.json());
       META = meta;
       fetch("/evaluation").then(r => r.ok ? r.json() : null).then(ev => {

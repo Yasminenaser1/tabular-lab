@@ -110,3 +110,9 @@ def test_evaluation_bands_are_ordered():
     for b in bands:
         lo, hi = b["observed_ci95"]
         assert lo <= b["observed_rate"] <= hi
+
+
+def test_schema_carries_code_labels():
+    labels = client.get("/schema").json()["labels"]
+    assert labels["admission_type_id"]["1"] == "Emergency"
+    assert labels["discharge_disposition_id"]["1"] == "Discharged to home"

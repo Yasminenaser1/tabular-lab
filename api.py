@@ -12,6 +12,8 @@ from fastapi.staticfiles import StaticFiles
 PIPELINE = joblib.load("models/pipeline.joblib")
 META = json.loads(Path("models/metadata.json").read_text())
 SCHEMA = json.loads(Path("models/schema.json").read_text())
+LABELS_PATH = Path("models/labels.json")   # code -> description for the three ID fields (optional)
+LABELS = json.loads(LABELS_PATH.read_text()) if LABELS_PATH.exists() else {}
 FEATURES = META["numeric"] + META["categorical"]
 
 app = FastAPI(title="Readmission Risk", version="1.0")
@@ -167,7 +169,7 @@ def metadata():
 
 @app.get("/schema")
 def schema():
-    return SCHEMA
+    return {**SCHEMA, "labels": LABELS}
 
 
 @app.post("/predict")
