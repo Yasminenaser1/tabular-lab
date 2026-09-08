@@ -62,6 +62,7 @@
 
     <section class="panel" data-panel="3" hidden>
       <div id="result"></div>
+      <div id="accuracy"></div>
       <div class="actions">
         <button type="button" class="ghost" data-back>← Edit patient</button>
         <button type="button" data-restart>Start over</button>
@@ -75,6 +76,7 @@
     // Sending null lets the pipeline's imputer map it to the MISSING category,
     // the same way it was handled in training.
     const NULLABLE = new Set(["race", "A1Cresult", "max_glu_serum"]);
+    let META = null;
 
     // The meter runs 0-50%: almost every real encounter lands below that.
     const METER_MAX = 0.5;
@@ -202,6 +204,34 @@
       </div>`;
     }
 
+    function accuracyHtml(ev) {
+      // Bars share one scale so the climb across bands is visible; the tick is the predicted mean.
+      const scale = 0.6;
+      const rows = ev.bands.map(b => {
+        const [lo, hi] = b.observed_ci95;
+        return `
+          <span class="band band-${b.band}">${b.band}</span>
+          <span class="n">${b.n.toLocaleString()}</span>
+          <span class="cal-bar band-${b.band}">
+            <i style="width:${Math.min(b.observed_rate / scale, 1) * 100}%"></i>
+            <b style="left:${Math.min(b.predicted_mean / scale, 1) * 100}%" title="predicted ${pct(b.predicted_mean)}"></b>
+          </span>
+          <span class="obs">${pct(b.observed_rate)} <small>(${pct(lo)}–${pct(hi)})</small></span>`;
+      }).join("");
+      return `<div class="card accuracy">
+        <h2>How accurate is it?</h2>
+        <p class="sub">${ev.n.toLocaleString()} patients the model never saw, held out by patient id.
+          Bars are the share actually readmitted; the tick is what the model predicted.</p>
+        <div class="cal">
+          <span class="h">Band</span><span class="h">Patients</span><span class="h">Observed vs predicted</span><span class="h">Readmitted (95% CI)</span>
+          ${rows}
+        </div>
+        <p class="foot">PR-AUC ${ev.pr_auc.toFixed(3)} · ROC-AUC ${ev.roc_auc.toFixed(3)} on this sample
+          (5-fold CV on the full data: PR-AUC ${META.cv_pr_auc.toFixed(3)}).
+          Small bands carry wide intervals — a few patients move the high-band rate by several points.</p>
+      </div>`;
+    }
+
     function render(data) {
       const out = document.getElementById("result");
       const caveats = data.caveats.length
@@ -287,6 +317,10 @@
     async function main() {
       const schema = await fetch("/schema").then(r => r.json());
       const meta = await fetch("/metadata").then(r => r.json());
+      META = meta;
+      fetch("/evaluation").then(r => r.ok ? r.json() : null).then(ev => {
+        if (ev) document.getElementById("accuracy").innerHTML = accuracyHtml(ev);
+      });
 
       const nNum = Object.keys(schema.numeric).length;
       const nCat = Object.keys(schema.categorical).length;

@@ -167,6 +167,16 @@ explain in one sentence.
 
 ![SHAP vs counterfactual](figures/shap_vs_counterfactual.png)
 
+**Accuracy is shown, not asserted.** The served model is fit on the patient-grouped
+80% split, and a 1,000-row sample of the untouched 20% ships with the app. At
+startup `GET /evaluation` scores it and groups patients by the same low /
+elevated / high bands the UI uses; the result page shows, per band, how many
+patients, what the model predicted, and how many were actually readmitted,
+with 95% Wilson intervals. Observed readmission rises band by band
+(about 7% → 12% → 42%), and a test asserts that ordering so a retrain that
+breaks it fails CI. Intervals are wide on a sample this size, and the page
+says so.
+
 Run it with:
 
 ```bash
