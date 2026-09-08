@@ -133,6 +133,26 @@ renders those caveats in red above the score. Three example patients let a
 visitor see the model react without filling in 22 fields. Light, dark and
 system themes.
 
+**Every prediction is explained.** The response also carries `drivers`: the
+fields moving this patient's risk the most, computed by one-at-a-time
+counterfactuals. Each field is set to its typical value (median or mode), the
+model is re-run, and the change in risk is reported; all 22 what-ifs go
+through the model in one batch, so it costs one extra prediction. For a
+patient with four prior inpatient stays:
+
+```json
+"drivers": [
+  {"feature": "number_inpatient", "value": 4, "default": 0.0, "delta": 0.100},
+  {"feature": "time_in_hospital", "value": 7, "default": 4.0, "delta": -0.051},
+  {"feature": "number_emergency", "value": 2, "default": 0.0, "delta": 0.020}
+]
+```
+
+The method is deliberately simple and its limitation is stated in the UI:
+fields are varied one at a time, so interactions between them are not
+captured. The ordering agrees with the permutation-importance table above,
+and a test asserts that prior inpatient stays stay the top driver.
+
 Run it with:
 
 ```bash
