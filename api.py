@@ -5,6 +5,7 @@ import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from sklearn.metrics import average_precision_score, roc_auc_score
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -24,6 +25,16 @@ def home():
 
 class PredictRequest(BaseModel):
     features: dict = Field(..., description="Feature name -> value")
+
+
+BANDS = [("low", 0.0, 0.15), ("elevated", 0.15, 0.25), ("high", 0.25, 1.01)]
+
+
+def band_for(prob: float) -> str:
+    for name, lo, hi in BANDS:
+        if lo <= prob < hi:
+            return name
+    return "high"
 
 
 def caveats(feats: dict) -> list[str]:
@@ -95,6 +106,60 @@ def explain(feats: dict, prob: float, top_n: int = 5) -> list[dict]:
     return drivers[:top_n]
 
 
+def wilson(k: int, n: int, z: float = 1.96) -> list[float]:
+    """95% confidence interval for a proportion k/n (Wilson score interval)."""
+    if n == 0:
+        return [None, None]
+    p_hat = k / n
+    denom = 1 + z * z / n
+    centre = (p_hat + z * z / (2 * n)) / denom
+    half = z * ((p_hat * (1 - p_hat) / n + z * z / (4 * n * n)) ** 0.5) / denom
+    return [round(max(0.0, centre - half), 4), round(min(1.0, centre + half), 4)]
+
+
+def evaluate_holdout() -> dict | None:
+    """Score the shipped held-out sample once, at startup.
+
+    These patients were excluded from training by patient id, so the observed
+    readmission rate per band is a fair check of calibration.
+    """
+    path = Path("models/holdout_sample.csv")
+    if not path.exists():
+        return None
+    df = pd.read_csv(path, dtype={c: str for c in META["categorical"]})
+    y = df.pop("readmitted_30").astype(int).to_numpy()
+    probs = PIPELINE.predict_proba(to_frame(df.to_dict("records")))[:, 1]
+    bands = []
+    for name, lo, hi in BANDS:
+        mask = (probs >= lo) & (probs < hi)
+        n = int(mask.sum())
+        bands.append({
+            "band": name,
+            "range": [lo, min(hi, 1.0)],
+            "n": n,
+            "predicted_mean": round(float(probs[mask].mean()), 4) if n else None,
+            "observed_rate": round(float(y[mask].mean()), 4) if n else None,
+            "observed_ci95": wilson(int(y[mask].sum()), n),
+        })
+    return {
+        "n": int(len(y)),
+        "baseline_rate": round(float(y.mean()), 4),
+        "pr_auc": round(float(average_precision_score(y, probs)), 4),
+        "roc_auc": round(float(roc_auc_score(y, probs)), 4),
+        "bands": bands,
+    }
+
+
+EVALUATION = evaluate_holdout()
+
+
+@app.get("/evaluation")
+def evaluation():
+    if EVALUATION is None:
+        raise HTTPException(404, "no held-out sample shipped with this model")
+    return EVALUATION
+
+
 @app.get("/metadata")
 def metadata():
     return META
@@ -118,7 +183,7 @@ def predict(req: PredictRequest):
         "probability": round(prob, 4),
         "baseline_rate": round(base, 4),
         "lift_vs_baseline": round(prob / base, 2),
-        "band": "high" if prob >= 0.25 else "elevated" if prob >= 0.15 else "low",
+        "band": band_for(prob),
         "caveats": caveats(req.features),
         "drivers": explain(req.features, prob),
         "model": META["model"],

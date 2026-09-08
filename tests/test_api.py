@@ -86,3 +86,27 @@ def test_prior_admissions_is_top_driver():
 def test_all_defaults_has_no_drivers():
     body = client.post("/predict", json={"features": default_features()}).json()
     assert body["drivers"] == []
+
+
+def test_evaluation_bands_are_ordered():
+    body = client.get("/evaluation").json()
+    bands = body["bands"]
+    assert [b["band"] for b in bands] == ["low", "elevated", "high"]
+    assert sum(b["n"] for b in bands) == body["n"]
+    observed = [b["observed_rate"] for b in bands]
+    assert observed == sorted(observed), "observed readmission must rise with predicted band"
+    for b in bands:
+        lo, hi = b["observed_ci95"]
+        assert lo <= b["observed_rate"] <= hi
+
+
+def test_evaluation_bands_are_ordered():
+    body = client.get("/evaluation").json()
+    bands = body["bands"]
+    assert [b["band"] for b in bands] == ["low", "elevated", "high"]
+    assert sum(b["n"] for b in bands) == body["n"]
+    observed = [b["observed_rate"] for b in bands]
+    assert observed == sorted(observed), "observed readmission must rise with predicted band"
+    for b in bands:
+        lo, hi = b["observed_ci95"]
+        assert lo <= b["observed_rate"] <= hi
