@@ -49,6 +49,52 @@ def caveats(feats: dict) -> list[str]:
     return out
 
 
+def to_frame(rows: list[dict]) -> pd.DataFrame:
+    """Feature dicts -> DataFrame in the pipeline's column order, numerics coerced."""
+    df = pd.DataFrame([{f: r.get(f) for f in FEATURES} for r in rows])
+    for col in META["numeric"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def default_for(feature: str):
+    if feature in SCHEMA["numeric"]:
+        return SCHEMA["numeric"][feature]["median"]
+    return SCHEMA["categorical"][feature]["default"]
+
+
+def explain(feats: dict, prob: float, top_n: int = 5) -> list[dict]:
+    """One-at-a-time counterfactuals.
+
+    For each feature not already at its default, re-predict with that single
+    feature set to its default (median or modal value). delta = actual risk
+    minus counterfactual risk, so a positive delta means this feature's value
+    is pushing the risk *up*. Cheap and easy to explain; it does not capture
+    interactions between features (SHAP would).
+    """
+    names, rows = [], []
+    for f in FEATURES:
+        default = default_for(f)
+        if feats.get(f) == default:
+            continue
+        names.append(f)
+        rows.append({**feats, f: default})
+    if not rows:
+        return []
+    cf_probs = PIPELINE.predict_proba(to_frame(rows))[:, 1]
+    drivers = [
+        {
+            "feature": f,
+            "value": feats.get(f),
+            "default": default_for(f),
+            "delta": round(prob - float(cf), 4),
+        }
+        for f, cf in zip(names, cf_probs)
+    ]
+    drivers.sort(key=lambda d: abs(d["delta"]), reverse=True)
+    return drivers[:top_n]
+
+
 @app.get("/metadata")
 def metadata():
     return META
@@ -65,11 +111,7 @@ def predict(req: PredictRequest):
     if missing:
         raise HTTPException(422, f"missing features: {missing}")
 
-    row = pd.DataFrame([{f: req.features[f] for f in FEATURES}])
-    for col in META["numeric"]:
-        row[col] = pd.to_numeric(row[col], errors="coerce")
-
-    prob = float(PIPELINE.predict_proba(row)[0, 1])
+    prob = float(PIPELINE.predict_proba(to_frame([req.features]))[0, 1])
     base = META["baseline_positive_rate"]
 
     return {
@@ -78,6 +120,7 @@ def predict(req: PredictRequest):
         "lift_vs_baseline": round(prob / base, 2),
         "band": "high" if prob >= 0.25 else "elevated" if prob >= 0.15 else "low",
         "caveats": caveats(req.features),
+        "drivers": explain(req.features, prob),
         "model": META["model"],
         "cv_pr_auc": round(META["cv_pr_auc"], 4),
     }

@@ -62,3 +62,27 @@ def test_more_prior_admissions_raises_risk():
     p_low = client.post("/predict", json={"features": low}).json()["probability"]
     p_high = client.post("/predict", json={"features": high}).json()["probability"]
     assert p_high > p_low
+
+
+def test_drivers_present_and_sorted():
+    feats = default_features() | {"number_inpatient": 4, "number_emergency": 2}
+    body = client.post("/predict", json={"features": feats}).json()
+    drivers = body["drivers"]
+    assert 1 <= len(drivers) <= 5
+    deltas = [abs(d["delta"]) for d in drivers]
+    assert deltas == sorted(deltas, reverse=True)
+    # A feature left at its default contributes nothing by construction, so it is never reported.
+    assert all(d["feature"] not in ("race", "gender") for d in drivers)
+
+
+def test_prior_admissions_is_top_driver():
+    feats = default_features() | {"number_inpatient": 5}
+    body = client.post("/predict", json={"features": feats}).json()
+    top = body["drivers"][0]
+    assert top["feature"] == "number_inpatient"
+    assert top["delta"] > 0
+
+
+def test_all_defaults_has_no_drivers():
+    body = client.post("/predict", json={"features": default_features()}).json()
+    assert body["drivers"] == []
