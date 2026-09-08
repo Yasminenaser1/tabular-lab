@@ -3,6 +3,7 @@
 [![CI](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml)
 
 **Live demo:** https://readmission-risk.onrender.com — Render free tier, kept warm by a scheduled GitHub Actions ping.
+**Model card:** [MODEL_CARD.md](MODEL_CARD.md)
 
 
 Predicting 30-day readmission for diabetic patients using the UCI Diabetes
