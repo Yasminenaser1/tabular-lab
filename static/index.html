@@ -180,6 +180,28 @@
       return features;
     }
 
+    function driversHtml(drivers) {
+      if (!drivers || !drivers.length) return "";
+      const max = Math.max(...drivers.map(d => Math.abs(d.delta)));
+      const rows = drivers.map(d => {
+        const pts = (d.delta * 100).toFixed(1);
+        const dir = d.delta > 0 ? "up" : "down";
+        const width = Math.round(Math.abs(d.delta) / max * 100);
+        const value = d.value === null ? "not recorded" : d.value;
+        return `<li class="driver driver-${dir}">
+          <span class="driver-name">${label(d.feature)}<small>${value} · typical ${d.default}</small></span>
+          <span class="driver-bar"><i style="width:${width}%"></i></span>
+          <span class="driver-delta">${d.delta > 0 ? "+" : ""}${pts} pts</span>
+        </li>`;
+      }).join("");
+      return `<div class="drivers">
+        <h3>What's driving this score</h3>
+        <ul>${rows}</ul>
+        <p class="clear">Each row is how much the risk would change if that one field were at its typical value.
+        One field at a time — interactions between fields aren't captured.</p>
+      </div>`;
+    }
+
     function render(data) {
       const out = document.getElementById("result");
       const caveats = data.caveats.length
@@ -208,6 +230,7 @@
               <span>0%</span><span class="base">baseline ${pct(data.baseline_rate)}</span><span>${pct(METER_MAX)}</span>
             </div>
           </div>
+          ${driversHtml(data.drivers)}
           ${caveats || '<p class="clear">No subgroup caveats apply — this patient is within the population the model was validated on.</p>'}
         </div>`;
     }

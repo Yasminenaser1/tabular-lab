@@ -125,3 +125,17 @@ button:hover { background: var(--accent-ink); }
 /* ---- field labels: readable name + raw feature key ---- */
 .lbl { color: var(--ink); }
 .key { font: 400 .68rem/1 ui-monospace, Menlo, monospace; color: var(--muted); opacity: .8; }
+
+/* ---- drivers ---- */
+.drivers { margin-top: 1.25rem; }
+.drivers h3 { margin: 0 0 .6rem; font: 700 1rem var(--body); }
+.drivers ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.driver { display: grid; grid-template-columns: 1fr 120px 72px; gap: .75rem; align-items: center; font-size: .88rem; }
+.driver-name small { display: block; color: var(--muted); font-size: .75rem; }
+.driver-bar { height: 8px; border-radius: 999px; background: var(--card-2); overflow: hidden; }
+.driver-bar i { display: block; height: 100%; background: var(--dot); }
+.driver-up { --dot: var(--critical); }
+.driver-down { --dot: var(--good); }
+.driver-delta { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.drivers .clear { font-size: .8rem; margin-top: .75rem; }
+@media (max-width: 520px) { .driver { grid-template-columns: 1fr 72px; } .driver-bar { display: none; } }
