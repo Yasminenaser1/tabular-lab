@@ -1,0 +1,20 @@
+{
+  "n_patients": 2000,
+  "spearman_global_rank": 0.704,
+  "top1_driver_agreement": 0.438,
+  "top3_driver_overlap": 0.405,
+  "shap_top5": {
+    "number_inpatient": 0.303,
+    "discharge_disposition_id": 0.2216,
+    "diag_1_group": 0.0722,
+    "number_diagnoses": 0.0656,
+    "time_in_hospital": 0.0405
+  },
+  "counterfactual_top5": {
+    "number_inpatient": 0.0244,
+    "discharge_disposition_id": 0.0173,
+    "diag_1_group": 0.0112,
+    "A1Cresult": 0.0077,
+    "number_diagnoses": 0.0064
+  }
+}
