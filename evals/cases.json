@@ -69,9 +69,14 @@
   {
     "question": "What does PR-AUC mean?",
     "expect_tool": null,
-    "must_include": [
-      "recall"
-    ],
-    "must_exclude": []
+    "must_include": [],
+    "must_exclude": [],
+    "any_of": [
+      "recall",
+      "precision",
+      "positive",
+      "readmitted",
+      "ranks"
+    ]
   }
 ]

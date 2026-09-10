@@ -20,7 +20,7 @@ DEFAULT_MODELS = {"ollama": "llama3.1:8b", "groq": "openai/gpt-oss-20b"}
 if BACKEND not in DEFAULT_MODELS:
     raise SystemExit(f"ASSISTANT_BACKEND must be one of {sorted(DEFAULT_MODELS)}, got {BACKEND!r}")
 MODEL = os.getenv("ASSISTANT_MODEL") or DEFAULT_MODELS[BACKEND]
-MAX_TOOL_ROUNDS = 4  # stop a confused model from looping forever
+MAX_TOOL_ROUNDS = 6  # stop a confused model from looping forever
 
 # What each field means, so the model can map plain English to field names.
 FIELD_MEANINGS = {
@@ -86,6 +86,12 @@ Rules:
 11. Questions about fairness or performance across race, age, or other groups are legitimate and
     expected. Call get_model_info and report the model's own measured numbers and known_limitations
     plainly. This is transparency about the model's measured behavior, not a statement about any group.
+12. For "how accurate is THIS model" or its overall performance numbers, call get_evaluation
+    (held-out results) and report its ROC-AUC. But if the user only asks what a metric MEANS
+    (e.g. "what does PR-AUC mean?"), just explain the concept in plain words with NO tool call.
+    Use get_model_info only for what the model is or for group/fairness questions.
+13. For "what drives the model" or "most important features", call get_model_info and report
+    top_drivers_overall in order (the first key is the strongest driver).
 
 Fields the model uses:
 {field_guide()}"""
@@ -122,7 +128,7 @@ TOOL_SPECS = [
         "type": "function",
         "function": {
             "name": "get_evaluation",
-            "description": "How accurate the model is: predicted risk vs real readmissions on held-out patients, by risk band.",
+            "description": "How accurate the model is on held-out patients it never saw in training: ROC-AUC, PR-AUC, and predicted vs real readmission rates by risk band. Use this for any question about accuracy or performance.",
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -130,7 +136,7 @@ TOOL_SPECS = [
         "type": "function",
         "function": {
             "name": "get_model_info",
-            "description": "What the model is, its cross-validated scores, and the groups where it is known to perform poorly.",
+            "description": "What the model IS: its type, training data, and the groups where it is known to perform poorly (fairness/limitations). Use for what-it-is and fairness questions, NOT for a general accuracy number - use get_evaluation for that.",
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -197,6 +203,10 @@ def run_tool(name: str, arguments) -> dict:
             arguments = json.loads(arguments or "{}")
         if not isinstance(arguments, dict):
             return {"error": f"arguments must be a JSON object, got {type(arguments).__name__}"}
+        # Some models write {"": ""} rather than {} for a tool that takes no arguments.
+        # Unpacking that raised "unexpected keyword argument ''", and the model answered
+        # the error by sending the very same call again, burning a round each time.
+        arguments = {k: v for k, v in arguments.items() if k != ""}
         for key in ("fields", "changes"):  # ...or a nested object as a string
             if isinstance(arguments.get(key), str):
                 arguments[key] = json.loads(arguments[key])
