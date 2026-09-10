@@ -6,6 +6,16 @@ reports comes from the trained model, never from the LLM itself.
 """
 from api import EVALUATION, FEATURES, LABELS, META, SCHEMA, caveats, default_for, score
 
+import json
+from pathlib import Path as _Path
+
+# Global feature-importance ranking, precomputed in models/shap_comparison.json.
+try:
+    _SHAP = json.loads((_Path(__file__).parent / "models" / "shap_comparison.json").read_text())
+    _TOP_DRIVERS = _SHAP.get("shap_top5", {})
+except (FileNotFoundError, json.JSONDecodeError):
+    _TOP_DRIVERS = {}
+
 
 def check_fields(fields: dict) -> dict:
     """Reject unknown fields and invalid values instead of guessing."""
@@ -78,4 +88,5 @@ def get_model_info() -> dict:
         "n_encounters": META["n_rows"],
         "trained_on": META["trained_on"],
         "known_limitations": known_limitations,
+        "top_drivers_overall": _TOP_DRIVERS,
     }
