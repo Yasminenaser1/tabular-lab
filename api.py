@@ -172,13 +172,13 @@ def schema():
     return {**SCHEMA, "labels": LABELS}
 
 
-@app.post("/predict")
-def predict(req: PredictRequest):
-    missing = [f for f in FEATURES if f not in req.features]
+def score(features: dict) -> dict:
+    """Everything /predict returns, as a plain function the assistant's tools can reuse."""
+    missing = [f for f in FEATURES if f not in features]
     if missing:
-        raise HTTPException(422, f"missing features: {missing}")
+        raise ValueError(f"missing features: {missing}")
 
-    prob = float(PIPELINE.predict_proba(to_frame([req.features]))[0, 1])
+    prob = float(PIPELINE.predict_proba(to_frame([features]))[0, 1])
     base = META["baseline_positive_rate"]
 
     return {
@@ -186,8 +186,16 @@ def predict(req: PredictRequest):
         "baseline_rate": round(base, 4),
         "lift_vs_baseline": round(prob / base, 2),
         "band": band_for(prob),
-        "caveats": caveats(req.features),
-        "drivers": explain(req.features, prob),
+        "caveats": caveats(features),
+        "drivers": explain(features, prob),
         "model": META["model"],
         "cv_pr_auc": round(META["cv_pr_auc"], 4),
     }
+
+
+@app.post("/predict")
+def predict(req: PredictRequest):
+    try:
+        return score(req.features)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
