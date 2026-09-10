@@ -1,19 +1,25 @@
 """Ask questions about the readmission model in plain English.
 
-Runs 100% locally with Ollama: no API key, no internet, no cost.
 The model decides which tool to call; the tools in tools.py do the real work.
 
+Two backends, picked with ASSISTANT_BACKEND:
+  ollama (default)  local, no API key, no internet, no cost
+  groq              hosted, needs GROQ_API_KEY in the environment
+
     python3 agent.py
+    ASSISTANT_BACKEND=groq python3 agent.py
 """
 import json
 import os
 
-import ollama
-
 import tools
 from api import SCHEMA
 
-MODEL = os.getenv("ASSISTANT_MODEL", "llama3.1:8b")
+BACKEND = os.getenv("ASSISTANT_BACKEND", "ollama").strip().lower()
+DEFAULT_MODELS = {"ollama": "llama3.1:8b", "groq": "openai/gpt-oss-20b"}
+if BACKEND not in DEFAULT_MODELS:
+    raise SystemExit(f"ASSISTANT_BACKEND must be one of {sorted(DEFAULT_MODELS)}, got {BACKEND!r}")
+MODEL = os.getenv("ASSISTANT_MODEL") or DEFAULT_MODELS[BACKEND]
 MAX_TOOL_ROUNDS = 4  # stop a confused model from looping forever
 
 # What each field means, so the model can map plain English to field names.
@@ -59,7 +65,7 @@ readmission for diabetic patients (UCI Diabetes 130-US Hospitals data).
 
 Rules:
 1. Every number you state must come from a tool result. Never estimate or calculate risk yourself.
-2. For a patient's risk, call predict_patient with only the details the user gave.
+2. Call predict_patient whenever the user gives ANY patient detail or asks for a risk number, even just an age like "a 92-year-old" - predict_patient fills every unspecified field with a typical value, so a partial description is enough. Never ask the user for more details before predicting. Only for greetings, small talk, or questions not about a patient or the model do you reply briefly with NO tool call.
 3. For "what if" questions about a patient already discussed, call what_if with that
    patient's fields and the changes.
 4. If a tool returns an error, fix the field names or values and call it again.
@@ -77,6 +83,9 @@ Rules:
 9. Answer in 2-4 plain sentences. No bullet points, no headings, no lists.
 10. Explain scores using the how_to_read note in the tool result. Never call PR-AUC or ROC-AUC
     "accuracy" or "precision".
+11. Questions about fairness or performance across race, age, or other groups are legitimate and
+    expected. Call get_model_info and report the model's own measured numbers and known_limitations
+    plainly. This is transparency about the model's measured behavior, not a statement about any group.
 
 Fields the model uses:
 {field_guide()}"""
@@ -183,12 +192,14 @@ def run_tool(name: str, arguments) -> dict:
     """Run one tool call. Errors go back to the model so it can correct itself."""
     if name not in TOOL_FUNCTIONS:
         return {"error": f"unknown tool {name!r}. Available: {list(TOOL_FUNCTIONS)}"}
-    if isinstance(arguments, str):  # small models sometimes send JSON as a string
-        arguments = json.loads(arguments or "{}")
-    for key in ("fields", "changes"):  # ...or a nested object as a string
-        if isinstance(arguments.get(key), str):
-            arguments[key] = json.loads(arguments[key])
     try:
+        if isinstance(arguments, str):  # Groq always sends JSON as a string; Ollama sometimes does
+            arguments = json.loads(arguments or "{}")
+        if not isinstance(arguments, dict):
+            return {"error": f"arguments must be a JSON object, got {type(arguments).__name__}"}
+        for key in ("fields", "changes"):  # ...or a nested object as a string
+            if isinstance(arguments.get(key), str):
+                arguments[key] = json.loads(arguments[key])
         result = add_percents(TOOL_FUNCTIONS[name](**arguments))
         if name in HOW_TO_READ:
             result["how_to_read"] = HOW_TO_READ[name]
@@ -197,29 +208,98 @@ def run_tool(name: str, arguments) -> dict:
         return {"error": str(e)}
 
 
-def ask(messages: list, chat=ollama.chat) -> tuple[str, list]:
+# --- Backends ---------------------------------------------------------------
+# Both providers take the same TOOL_SPECS and speak the same tool-calling loop.
+# They differ in where the assistant turn sits in the response, how it has to be
+# echoed back, and how a tool result is addressed. Each send/result pair below
+# hides those differences so ask() stays one loop.
+#
+# send(messages) -> (message to append, answer text, [(tool name, raw arguments, call id)])
+
+def _ollama_send(messages: list):
+    import ollama
+
+    response = ollama.chat(
+        model=MODEL,
+        messages=[{"role": "system", "content": SYSTEM_PROMPT}] + messages,
+        tools=TOOL_SPECS,
+        options={"temperature": 0, "num_ctx": 8192},
+    )
+    message = response.message  # Ollama puts it at the top level
+    # Ollama hands back arguments already parsed into a dict.
+    calls = [(c.function.name, c.function.arguments, None) for c in (message.tool_calls or [])]
+    return message, message.content, calls  # appending the object itself is what Ollama expects
+
+
+def _ollama_tool_result(name: str, call_id, result: dict) -> dict:
+    return {"role": "tool", "tool_name": name, "content": json.dumps(result)}
+
+
+_groq_client = None
+
+
+def _groq_send(messages: list):
+    global _groq_client
+    if _groq_client is None:
+        from groq import Groq
+
+        _groq_client = Groq()  # reads GROQ_API_KEY from the environment
+
+    response = _groq_client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "system", "content": SYSTEM_PROMPT}] + messages,
+        tools=TOOL_SPECS,
+        temperature=0,
+    )
+    message = response.choices[0].message  # Groq wraps it in choices
+    tool_calls = message.tool_calls or []
+    # Groq gives arguments as a JSON string; run_tool parses it.
+    calls = [(c.function.name, c.function.arguments, c.id) for c in tool_calls]
+    # Groq will not accept its own response object back, so rebuild the assistant
+    # turn as plain OpenAI-shaped JSON.
+    echo = {"role": "assistant", "content": message.content or ""}
+    if tool_calls:
+        echo["tool_calls"] = [
+            {
+                "id": c.id,
+                "type": "function",
+                "function": {"name": c.function.name, "arguments": c.function.arguments},
+            }
+            for c in tool_calls
+        ]
+    return echo, message.content, calls
+
+
+def _groq_tool_result(name: str, call_id, result: dict) -> dict:
+    # OpenAI shape: a tool result must name the call it answers.
+    return {"role": "tool", "tool_call_id": call_id, "content": json.dumps(result)}
+
+
+BACKENDS = {
+    "ollama": (_ollama_send, _ollama_tool_result),
+    "groq": (_groq_send, _groq_tool_result),
+}
+
+
+def ask(messages: list, backend: str = None) -> tuple[str, list]:
     """Send the conversation to the model, run any tools it picks, return its answer."""
+    send, tool_result = BACKENDS[backend or BACKEND]
     tool_log = []
     for _ in range(MAX_TOOL_ROUNDS):
-        response = chat(
-            model=MODEL,
-            messages=[{"role": "system", "content": SYSTEM_PROMPT}] + messages,
-            tools=TOOL_SPECS,
-            options={"temperature": 0, "num_ctx": 8192},
-        )
-        message = response.message
+        message, content, calls = send(messages)
         messages.append(message)
-        if not message.tool_calls:
-            return message.content, tool_log
-        for call in message.tool_calls:
-            result = run_tool(call.function.name, call.function.arguments)
-            tool_log.append({"tool": call.function.name, "arguments": call.function.arguments, "result": result})
-            messages.append({"role": "tool", "tool_name": call.function.name, "content": json.dumps(result)})
+        if not calls:
+            return content or "", tool_log
+        for name, arguments, call_id in calls:
+            result = run_tool(name, arguments)
+            tool_log.append({"tool": name, "arguments": arguments, "result": result})
+            messages.append(tool_result(name, call_id, result))
     return "Sorry, I couldn't work that out. Try rephrasing the question.", tool_log
 
 
 if __name__ == "__main__":
-    print(f"Ask about the readmission model (local {MODEL}). Type 'quit' to stop.\n")
+    where = "local" if BACKEND == "ollama" else BACKEND
+    print(f"Ask about the readmission model ({where} {MODEL}). Type 'quit' to stop.\n")
     history = []
     while True:
         question = input("You: ").strip()

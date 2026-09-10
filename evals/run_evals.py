@@ -35,6 +35,9 @@ def check(case: dict, answer: str, tool_log: list) -> list:
     for word in case.get("must_include", []):
         if word.lower() not in low:
             fails.append(f"missing {word!r}")
+    any_of = case.get("any_of", [])
+    if any_of and not any(w.lower() in low for w in any_of):
+        fails.append(f"none of {any_of} present")
     for word in case.get("must_exclude", []):
         if word.lower() in low:
             fails.append(f"should not contain {word!r}")

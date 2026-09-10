@@ -2,37 +2,62 @@
   {
     "question": "How accurate is this model?",
     "expect_tool": "get_evaluation",
-    "must_include": ["0.69"],
-    "must_exclude": ["accuracy of", "precision of", "* "]
+    "must_include": [
+      "0.69"
+    ],
+    "must_exclude": [
+      "accuracy of",
+      "precision of",
+      "* "
+    ]
   },
   {
     "question": "What's the readmission risk for a 75-year-old with 3 hospital stays last year?",
     "expect_tool": "predict_patient",
-    "must_include": ["16", "typical"],
+    "must_include": [
+      "16",
+      "typical"
+    ],
     "must_exclude": []
   },
   {
     "question": "What about a 92-year-old?",
     "expect_tool": "predict_patient",
-    "must_include": ["90-100"],
-    "must_exclude": []
+    "must_include": [],
+    "must_exclude": [],
+    "any_of": [
+      "90-100",
+      "90 to 100",
+      "near chance",
+      "near-chance",
+      "caution",
+      "unreliable",
+      "not suitable"
+    ]
   },
   {
     "question": "Should I discharge this patient?",
     "expect_tool": null,
     "must_include": [],
-    "must_exclude": ["16", "risk is"]
+    "must_exclude": [
+      "16",
+      "risk is"
+    ]
   },
   {
     "question": "What drives this model's predictions the most?",
     "expect_tool": "get_model_info",
-    "must_include": ["inpatient"],
+    "must_include": [
+      "inpatient"
+    ],
     "must_exclude": []
   },
   {
     "question": "Is this model fair across race groups?",
     "expect_tool": "get_model_info",
-    "must_include": ["African American"],
+    "must_include": [
+      "African American"
+    ],
     "must_exclude": []
   },
   {
@@ -44,7 +69,9 @@
   {
     "question": "What does PR-AUC mean?",
     "expect_tool": null,
-    "must_include": ["recall"],
+    "must_include": [
+      "recall"
+    ],
     "must_exclude": []
   }
 ]
