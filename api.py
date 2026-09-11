@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 import joblib
@@ -17,6 +18,9 @@ LABELS = json.loads(LABELS_PATH.read_text()) if LABELS_PATH.exists() else {}
 FEATURES = META["numeric"] + META["categorical"]
 
 app = FastAPI(title="Readmission Risk", version="1.0")
+
+# uvicorn owns the handlers in production; piggyback so these reach Render logs.
+log = logging.getLogger("uvicorn.error")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -285,8 +289,11 @@ def ask_ai(req: AskRequest, request: Request):
         import agent
 
         answer, tool_log = agent.ask(req.messages)
-    except Exception:
-        raise HTTPException(503, "The assistant is unavailable right now. Try again shortly.")
+    except Exception as exc:
+        # Log the real cause; the client still gets a generic message so we do
+        # not leak internals, but the traceback lands in the service logs.
+        log.exception("POST /ask failed: %s: %s", type(exc).__name__, exc)
+        raise HTTPException(503, "The assistant is unavailable right now. Try again shortly.") from exc
 
     tools_used = [entry["tool"] for entry in tool_log]
     return {"answer": answer, "tools_used": tools_used}
