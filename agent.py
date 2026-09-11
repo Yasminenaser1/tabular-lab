@@ -19,7 +19,7 @@ BACKEND = os.getenv("ASSISTANT_BACKEND", "ollama").strip().lower()
 DEFAULT_MODELS = {"ollama": "llama3.1:8b", "groq": "openai/gpt-oss-20b"}
 if BACKEND not in DEFAULT_MODELS:
     raise SystemExit(f"ASSISTANT_BACKEND must be one of {sorted(DEFAULT_MODELS)}, got {BACKEND!r}")
-MODEL = os.getenv("ASSISTANT_MODEL") or DEFAULT_MODELS[BACKEND]
+MODEL = os.getenv("ASSISTANT_MODEL", "").strip() or DEFAULT_MODELS[BACKEND]
 MAX_TOOL_ROUNDS = 6  # stop a confused model from looping forever
 
 # What each field means, so the model can map plain English to field names.
@@ -253,7 +253,11 @@ def _groq_send(messages: list):
     if _groq_client is None:
         from groq import Groq
 
-        _groq_client = Groq()  # reads GROQ_API_KEY from the environment
+        # Strip the key: a value pasted into a dashboard often keeps a trailing
+        # newline, and httpx rejects the Authorization header outright rather
+        # than trimming it, so every call died as a bare "Connection error".
+        key = os.getenv("GROQ_API_KEY", "").strip()
+        _groq_client = Groq(api_key=key or None)
 
     response = _groq_client.chat.completions.create(
         model=MODEL,
