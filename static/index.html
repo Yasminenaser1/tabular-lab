@@ -428,6 +428,15 @@
     return el;
   }
 
+  function looksLikeRawToolCall(text) {
+    // The small model sometimes prints a tool call as text instead of calling it.
+    // Catch that so the user never sees a raw JSON blob.
+    const t = (text || "").trim();
+    if (!t) return true;
+    if (t.startsWith("{") && /"(name|parameters|fields|changes)"\s*:/.test(t)) return true;
+    return false;
+  }
+
   async function send() {
     const q = input.value.trim();
     if (!q) return;
@@ -446,6 +455,8 @@
       thinking.remove();
       if (!res.ok) {
         bubble("Error " + res.status + ": " + (data.detail || "something went wrong"), "ai");
+      } else if (looksLikeRawToolCall(data.answer)) {
+        bubble("Sorry, I couldn't put that into words. Try rephrasing your question.", "ai");
       } else {
         bubble(data.answer, "ai", data.tools_used);
         history.push({ role: "assistant", content: data.answer });
