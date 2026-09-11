@@ -279,8 +279,11 @@ def ask_ai(req: AskRequest, request: Request):
     if not _rate_ok(client):
         raise HTTPException(429, "Too many requests. Please wait a moment.")
 
-    import agent  # lazy import so /predict etc. work even if no backend is configured
     try:
+        # Lazy import so /predict etc. keep working even if the assistant's
+        # modules or backend are missing; a failure here becomes the 503 below.
+        import agent
+
         answer, tool_log = agent.ask(req.messages)
     except Exception:
         raise HTTPException(503, "The assistant is unavailable right now. Try again shortly.")
