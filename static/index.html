@@ -39,8 +39,8 @@
   <p id="status">Loading model schema…</p>
 
   <nav class="steps" id="steps">
-    <span class="step is-active" data-step="1"><b>1</b> Encounter</span>
-    <span class="step" data-step="2"><b>2</b> Patient</span>
+    <span class="step is-active" data-step="1"><b>1</b> Basics</span>
+    <span class="step" data-step="2"><b>2</b> Review</span>
     <span class="step" data-step="3"><b>3</b> Result</span>
   </nav>
   <div class="progress"><div class="progress-bar" id="progress"></div></div>
@@ -54,19 +54,33 @@
         <button type="button" class="ghost" data-example="elderly">Age 90+ (out of scope)</button>
       </div>
       <fieldset>
-        <legend>Encounter</legend>
-        <div id="numeric" class="grid"></div>
+        <legend>The basics</legend>
+        <p class="field-intro">Every field is already filled in with a typical patient's values,
+          so you can go straight to the result. Change anything you know.</p>
+        <div id="primary" class="grid"></div>
       </fieldset>
       <div class="actions">
         <span></span>
-        <button type="button" data-next>Next: patient →</button>
+        <button type="button" data-next>Next: review →</button>
       </div>
     </section>
 
     <section class="panel" data-panel="2" hidden>
       <fieldset>
-        <legend>Patient &amp; clinical</legend>
-        <div id="categorical" class="grid"></div>
+        <legend>Ready to predict</legend>
+        <p class="field-intro">The remaining inputs are already set to typical values.
+          Open them only if you want to change something — otherwise just hit Predict.</p>
+        <details id="advanced">
+          <summary>More options <span class="count" id="advanced-count"></span></summary>
+          <div class="adv-group">
+            <h3>Encounter</h3>
+            <div id="numeric" class="grid"></div>
+          </div>
+          <div class="adv-group">
+            <h3>Patient &amp; clinical</h3>
+            <div id="categorical" class="grid"></div>
+          </div>
+        </details>
       </fieldset>
       <div class="actions">
         <button type="button" class="ghost" data-back>← Back</button>
@@ -116,6 +130,25 @@
       }
     }
 
+    // The five fields a non-technical user can answer off the top of their head.
+    // The other 17 stay in the form, pre-filled, behind the "More options" toggle.
+    // Order here is the order they appear in step 1.
+    const PRIMARY = ["age", "number_inpatient", "time_in_hospital", "number_emergency", "num_medications"];
+
+    // Plain-English label + one-line hint, for the five primary fields only.
+    // Advanced fields keep the clinician-facing LABELS below.
+    const PRIMARY_COPY = {
+      age: ["Patient's age", "The ten-year band the patient falls into."],
+      number_inpatient: ["Prior inpatient stays this year",
+                         "Times they were admitted to hospital in the last year, not counting this stay."],
+      time_in_hospital: ["Length of this hospital stay",
+                         "Days from admission to discharge for the visit you're scoring."],
+      number_emergency: ["Emergency visits this year",
+                         "Trips to the emergency department in the last year, not counting this stay."],
+      num_medications: ["Medications during this stay",
+                        "How many different medicines were given while they were in hospital."],
+    };
+
     // Clinician-facing labels; the raw feature name is still shown underneath.
     const LABELS = {
       time_in_hospital: "Days in hospital",
@@ -144,9 +177,23 @@
     const label = (name) => LABELS[name] ?? name.replaceAll("_", " ");
     const pct = (p) => (p * 100).toFixed(1) + "%";
 
-    function numericField(name, info) {
+    // Primary fields get a plain-English label and a hint; advanced fields get the
+    // clinician label on its own. The raw feature name is never shown - it only
+    // travels in the request body, as the input's name.
+    function fieldWrap(name) {
       const wrap = document.createElement("label");
-      wrap.innerHTML = `<span class="lbl">${label(name)}</span><span class="key">${name}</span>`;
+      const friendly = PRIMARY_COPY[name];
+      if (friendly) {
+        wrap.className = "field-primary";
+        wrap.innerHTML = `<span class="lbl">${friendly[0]}</span><span class="hint">${friendly[1]}</span>`;
+      } else {
+        wrap.innerHTML = `<span class="lbl">${label(name)}</span>`;
+      }
+      return wrap;
+    }
+
+    function numericField(name, info) {
+      const wrap = fieldWrap(name);
       const input = document.createElement("input");
       input.type = "number";
       input.name = name;
@@ -160,8 +207,7 @@
     }
 
     function categoricalField(name, info) {
-      const wrap = document.createElement("label");
-      wrap.innerHTML = `<span class="lbl">${label(name)}</span><span class="key">${name}</span>`;
+      const wrap = fieldWrap(name);
       const select = document.createElement("select");
       select.name = name;
       if (NULLABLE.has(name)) {
@@ -177,15 +223,27 @@
       return wrap;
     }
 
+    // Every field is built the same way and pre-filled from /schema (median for
+    // numerics, modal value for categoricals - the same values the backend's
+    // default_for() uses). Only the placement differs: five in step 1, the rest
+    // inside the collapsed <details> in step 2.
     function buildForm(schema) {
-      const num = document.getElementById("numeric");
-      const cat = document.getElementById("categorical");
-      for (const [name, info] of Object.entries(schema.numeric)) {
-        num.appendChild(numericField(name, info));
-      }
-      for (const [name, info] of Object.entries(schema.categorical)) {
-        cat.appendChild(categoricalField(name, info));
-      }
+      const field = (name) => name in schema.numeric
+        ? numericField(name, schema.numeric[name])
+        : categoricalField(name, schema.categorical[name]);
+
+      const primary = document.getElementById("primary");
+      for (const name of PRIMARY) primary.appendChild(field(name));
+
+      const rest = (names, target) => {
+        const box = document.getElementById(target);
+        const hidden = names.filter(n => !PRIMARY.includes(n));
+        for (const name of hidden) box.appendChild(field(name));
+        return hidden.length;
+      };
+      const n = rest(Object.keys(schema.numeric), "numeric")
+              + rest(Object.keys(schema.categorical), "categorical");
+      document.getElementById("advanced-count").textContent = `${n} fields`;
     }
 
     function readForm(form) {
@@ -342,6 +400,13 @@
 
       const form = document.getElementById("form");
       form.addEventListener("submit", predict);
+      // A control inside a closed <details> can't be focused, so the browser would
+      // block the submit without showing anything. Open the panel first, so the
+      // validation bubble lands on a field the user can actually see.
+      form.addEventListener("invalid", (e) => {
+        const details = e.target.closest("details");
+        if (details) details.open = true;
+      }, true);
       for (const b of document.querySelectorAll("[data-example]")) {
         b.addEventListener("click", () => {
           applyExample(form, schema, EXAMPLES[b.dataset.example]);

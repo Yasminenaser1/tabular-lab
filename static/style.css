@@ -144,9 +144,38 @@ button:hover { background: var(--accent-ink); }
 .examples button { font-size: .82rem; padding: .45rem .8rem; }
 @media (prefers-reduced-motion: reduce) { .meter-fill, .progress-bar { transition: none; } }
 
-/* ---- field labels: readable name + raw feature key ---- */
+/* ---- field labels ---- */
 .lbl { color: var(--ink); }
-.key { font: 400 .68rem/1 ui-monospace, Menlo, monospace; color: var(--muted); opacity: .8; }
+
+/* ---- plain-English primary fields (step 1) ---- */
+.field-intro { margin: -.25rem 0 1.1rem; font-size: .88rem; color: var(--muted); max-width: 62ch; }
+.field-primary { gap: .35rem; }
+.field-primary .lbl { font-size: .9rem; }
+.field-primary .hint {
+  font: 400 .78rem/1.4 var(--body); color: var(--muted); margin-bottom: .1rem;
+}
+#primary { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem 1.5rem; }
+
+/* ---- "More options": the other 17 fields, collapsed by default ---- */
+#advanced summary {
+  cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: .5rem;
+  font: 700 .9rem var(--body); color: var(--accent-ink);
+  padding: .55rem .9rem; border: 1px solid var(--line); border-radius: 8px; background: var(--card-2);
+}
+#advanced summary::-webkit-details-marker { display: none; }
+#advanced summary::before {
+  content: "▸"; font-size: .8em; color: var(--muted); transition: transform .15s ease;
+}
+#advanced[open] summary::before { transform: rotate(90deg); }
+#advanced summary:hover { background: var(--accent-soft); border-color: var(--accent); }
+#advanced summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#advanced summary .count { font-weight: 500; color: var(--muted); }
+.adv-group { margin-top: 1.5rem; }
+.adv-group h3 {
+  margin: 0 0 .75rem; font: 700 .72rem var(--body); letter-spacing: .09em;
+  text-transform: uppercase; color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) { #advanced summary::before { transition: none; } }
 
 /* ---- drivers ---- */
 .drivers { margin-top: 1.25rem; }
