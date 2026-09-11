@@ -204,6 +204,16 @@ uvicorn api:app --reload --port 8000
 Built with scikit-learn 1.9.0; the pickled pipeline may not load under a
 different version.
 
+## Ask AI
+
+A tool-calling assistant answers questions about the model in plain English, at `/ask`. It never invents numbers: every figure it quotes comes from the model itself through tools (`predict_patient`, `what_if`, `get_evaluation`, `get_model_info`, `check_fields`, `get_field_options`). The language model only decides which tool to call and phrases the reply; the numbers come from the same endpoints the rest of the site uses.
+
+It runs on a local Ollama backend (`llama3.1:8b`) or hosted Groq (`openai/gpt-oss-20b`), switchable with the `ASSISTANT_BACKEND` environment variable, with no change to `agent.py`.
+
+Guardrails: it refuses clinical-advice questions like "should I discharge this patient" without calling any tool; the `/ask` endpoint caps message length and rate-limits requests; and the API key is whitespace-stripped so a stray newline can't break authentication.
+
+An eval harness in `evals/` scores the assistant's answers on which tool it chose and what it said. This surfaced a concrete lesson: the local 8b model followed the guardrails inconsistently (about 5 of 8 cases), while hosted `gpt-oss` was reliable (8 of 8) — a reminder that model choice, not just prompting, drives how dependable an agent is.
+
 ## Tests & deployment
 
 `tests/test_api.py` exercises the service without the dataset: schema/model
