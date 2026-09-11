@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About the model — 30-day readmission risk</title>
+  <script>
+    // Apply the saved theme before first paint, so a reload never flashes the wrong theme.
+    try {
+      const t = localStorage.getItem("theme");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <script src="/static/site.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href="/">Readmission Risk</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/">Home</a>
+      <a href="/about" aria-current="page">About the model</a>
+      <a href="/how-it-works">How it works</a>
+      <a href="/try">Try it</a>
+      <a href="/ask">Ask AI</a>
+    </nav>
+    <div class="theme" role="group" aria-label="Theme">
+      <button type="button" data-theme-choice="light">Light</button>
+      <button type="button" data-theme-choice="system">System</button>
+      <button type="button" data-theme-choice="dark">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="page-hero">
+    <p class="eyebrow">About the model</p>
+    <h1>What it predicts, and where it breaks</h1>
+    <p class="lede">
+      A gradient boosting classifier that estimates the probability a diabetic inpatient is
+      readmitted within 30 days of discharge. This page is the short version of the model
+      card: what went in, how well it scores, and the groups where it measurably fails.
+    </p>
+  </div>
+
+  <div class="prose">
+    <h2>Model details</h2>
+    <ul>
+      <li><b>Model:</b> scikit-learn <code>HistGradientBoostingClassifier</code> — 300 iterations,
+        learning rate 0.05, 31 max leaf nodes, L2 = 1.0, early stopping — inside a
+        <code>Pipeline</code> with median imputation and scaling for numerics, and
+        constant-<code>MISSING</code> imputation with one-hot encoding (min frequency 20)
+        for categoricals.</li>
+      <li><b>Inputs:</b> 8 numeric and 14 categorical fields describing a single hospital
+        encounter. <code>GET /schema</code> lists them with their valid values.</li>
+      <li><b>Output:</b> a probability of readmission within 30 days, plus a risk band
+        (low &lt; 15% ≤ elevated &lt; 25% ≤ high), any subgroup caveats that apply, and the
+        fields driving that particular score.</li>
+      <li><b>Version:</b> trained 2026-09-08 on the patient-grouped 80% split (79k encounters),
+        scikit-learn 1.9.0. The remaining 20% is held out; a 1,000-row sample ships with the
+        app for the live calibration check on the result page.</li>
+    </ul>
+
+    <h2>Intended use</h2>
+    <p>
+      The primary purpose is to demonstrate an end-to-end tabular ML workflow on real
+      de-identified clinical data — leakage-safe validation, calibration, error analysis,
+      subgroup reporting, serving, and explanation. The intended audience is people
+      evaluating the engineering and the analysis, through this demo, the API, or the
+      repository.
+    </p>
+    <p>
+      <b>Out of scope:</b> any clinical, operational, or insurance decision about a real
+      patient. The data are from US hospitals between 1999 and 2008; care patterns, coding
+      practice, and populations have all changed since. The model has never been externally
+      validated, and it underperforms in the groups listed below.
+    </p>
+
+    <h2>The data</h2>
+    <p>
+      UCI <i>Diabetes 130-US Hospitals for Years 1999–2008</i> (Clore et al., 2014; CC BY 4.0):
+      101,766 encounters from 71,518 unique patients across 130 US hospitals. After the
+      exclusions described below, 99,343 encounters remain. The positive rate — readmission
+      within 30 days — is 11.4%.
+    </p>
+    <p>Three decisions shaped what the model sees:</p>
+    <ul>
+      <li><code>weight</code> is 97% missing and is dropped outright.</li>
+      <li><code>A1Cresult</code> and <code>max_glu_serum</code> are 85–95% missing, but a test
+        <i>not</i> being ordered is itself a signal. They keep "not tested" as its own
+        category rather than being imputed away.</li>
+      <li><code>diag_1</code>, <code>diag_2</code> and <code>diag_3</code> hold roughly 700
+        distinct ICD-9 codes each. These are grouped into nine clinical categories —
+        circulatory, respiratory, diabetes, and so on — rather than one-hot encoded raw.</li>
+    </ul>
+
+    <h2>Why death and hospice encounters are excluded</h2>
+    <p>
+      2,423 encounters (2.4% of the data) end in death or a transfer to hospice — discharge
+      disposition codes 11, 13, 14, 19, 20 and 21. These patients cannot be readmitted. Their
+      recorded 30-day readmission rate is 1.8%, against 11.4% for everyone else, and that gap
+      is an artifact of mortality rather than of risk.
+    </p>
+    <p>
+      Left in, they hand the model a shortcut: learning that discharge code 11 means no
+      readmission is <i>correct</i>, and clinically useless. It would inflate every headline
+      metric while teaching the model nothing about the patients a discharge planner actually
+      needs to identify. So they are removed before training, and the model is only ever
+      asked about patients who could come back.
+    </p>
+
+    <h2>How well it scores</h2>
+    <p>5-fold <code>GroupKFold</code> cross-validation, grouped by <code>patient_nbr</code>:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Model</th><th>PR-AUC</th><th>vs. base rate</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Dummy (predicts the base rate)</td><td>0.1139 ± 0.0019</td><td>—</td></tr>
+          <tr><td>Logistic regression</td><td>0.2153 ± 0.0048</td><td>+89%</td></tr>
+          <tr><td><b>Gradient boosting</b></td><td><b>0.2306 ± 0.0040</b></td><td><b>+102%</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Boosting beats logistic regression in 5 of 5 folds (mean gain 0.0154, worst fold
+      +0.0087), so the improvement survives resampling rather than being an artifact of one
+      split. Patients in the top predicted-risk decile readmit at 27.8% against 4.0% in the
+      bottom decile — a 6.9× lift. Probabilities are calibrated, so a score can be read as an
+      actual risk and not merely a ranking.
+    </p>
+    <p>
+      ROC-AUC on the held-out test set is 0.669, much higher than the PR-AUC because the large
+      negative class flatters the false-positive rate. At an 11.4% base rate, accuracy and
+      ROC-AUC flatter any model — predicting "no" for every patient scores 88.6% accuracy —
+      so PR-AUC is the metric reported throughout.
+    </p>
+
+    <h2>Where it fails</h2>
+    <p>Subgroup performance on the held-out test set:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Group</th><th>n</th><th>PR-AUC</th><th>Note</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Age 90–100</td><td>547</td><td>0.194 (ROC 0.540)</td>
+            <td>Near chance, against roughly 0.65 ROC-AUC for other age bands</td>
+          </tr>
+          <tr>
+            <td>African American</td><td>3,707</td><td>0.190</td>
+            <td>vs 0.238 for Caucasian patients (n = 14,886) at similar base rates</td>
+          </tr>
+          <tr>
+            <td>Race unrecorded</td><td>418</td><td>0.168</td>
+            <td>Weakest group measured, but on a small sample</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The 90–100 result is not a base-rate artifact: that group has the <i>highest</i>
+      readmission rate of any age band, at 12.8%. The model is weakest exactly where the
+      patients most likely to return are. Plausibly the available features don't capture what
+      drives readmission in the very elderly — frailty, social support, care setting.
+    </p>
+    <p>
+      The race gap is measured on samples large enough for the estimate to be stable: base
+      rates are close (10.7% vs 11.5%), so this is a difference in how well the model ranks,
+      not a difference in who gets readmitted.
+    </p>
+    <p>
+      Subgroups below roughly 500 encounters (about 40 positives) give unstable PR-AUC
+      estimates. That covers the unrecorded-race group and puts the 90–100 band close to the
+      line, so both should be read as indicative rather than settled. Small subgroups that
+      score <i>well</i> — ages 20–30, PR-AUC 0.537 on n=388 — are not reported as strengths,
+      for exactly the same reason.
+    </p>
+    <p>
+      <b>This model should not be deployed for the 90+ population, and the performance gap
+      across race groups would need to be addressed before any clinical use.</b>
+    </p>
+
+    <h2>Fairness and ethical considerations</h2>
+    <ul>
+      <li>Race, gender and age are model inputs. They are kept deliberately: the analysis
+        reports performance <i>by</i> group and the service warns <i>at the point of use</i>.
+        Removing them would hide the gap, not close it — and a deployable model would need
+        that gap addressed first.</li>
+      <li>Known limitations travel with the prediction. If a request falls into an affected
+        subgroup, <code>POST /predict</code> returns the caveat in its response and the result
+        page shows it in red above the score. A consumer is warned where they act, rather than
+        being expected to have read the documentation.</li>
+      <li>Prior hospital utilisation dominates the signal. A model like this can reinforce
+        existing patterns of care if it is used to allocate resources without oversight.</li>
+      <li>Do not use it for the 90+ population at all.</li>
+      <li>Retraining on current data and external validation would both be required before any
+        real-world use.</li>
+    </ul>
+
+    <p>
+      The full model card, including the reproduction steps, lives in
+      <a href="https://github.com/Yasminenaser1/tabular-lab/blob/main/MODEL_CARD.md">MODEL_CARD.md</a>.
+      For the methods behind the splits, the explanations and the calibration check, see
+      <a href="/how-it-works">How it works</a>.
+    </p>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Not for clinical use.</strong> This is a personal portfolio project built on data
+    from 1999–2008. The model has not been externally validated and performs near chance for
+    patients aged 90+.
+  </div>
+</main>
+</body>
+</html>

@@ -20,9 +20,35 @@ app = FastAPI(title="Readmission Risk", version="1.0")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+# --- pages ----------------------------------------------------------------
+# One static file per page; each carries the same header/nav and marks its own
+# link with aria-current. Kept out of the OpenAPI schema, which documents the API.
+
 @app.get("/", include_in_schema=False)
 def home():
+    return FileResponse("static/home.html")
+
+
+@app.get("/about", include_in_schema=False)
+def about():
+    return FileResponse("static/about.html")
+
+
+@app.get("/how-it-works", include_in_schema=False)
+def how_it_works():
+    return FileResponse("static/how.html")
+
+
+@app.get("/try", include_in_schema=False)
+def try_it():
     return FileResponse("static/index.html")
+
+
+# GET /ask is the chat page; POST /ask (below) is the assistant endpoint it calls.
+# FastAPI routes on path *and* method, so the two coexist on the same URL.
+@app.get("/ask", include_in_schema=False)
+def ask_page():
+    return FileResponse("static/ask.html")
 
 
 class PredictRequest(BaseModel):

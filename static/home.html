@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>30-day readmission risk</title>
+  <script>
+    // Apply the saved theme before first paint, so a reload never flashes the wrong theme.
+    try {
+      const t = localStorage.getItem("theme");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <script src="/static/site.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href="/">Readmission Risk</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/" aria-current="page">Home</a>
+      <a href="/about">About the model</a>
+      <a href="/how-it-works">How it works</a>
+      <a href="/try">Try it</a>
+      <a href="/ask">Ask AI</a>
+    </nav>
+    <div class="theme" role="group" aria-label="Theme">
+      <button type="button" data-theme-choice="light">Light</button>
+      <button type="button" data-theme-choice="system">System</button>
+      <button type="button" data-theme-choice="dark">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="page-hero">
+    <p class="eyebrow">Tabular ML, end to end</p>
+    <h1>30-day readmission risk</h1>
+    <p class="lede">
+      A gradient boosting model that estimates the probability a diabetic inpatient is
+      readmitted within 30 days of discharge — trained on 99,343 de-identified encounters
+      from 130 US hospitals, served with its own limitations attached to every prediction.
+    </p>
+    <div class="cta-row">
+      <a class="btn" href="/try">Try a prediction →</a>
+      <a class="btn ghost" href="/how-it-works">How it works</a>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat">
+      <b>6.9×</b>
+      <span>lift — the top predicted-risk decile readmits at 27.8%, the bottom at 4.0%</span>
+    </div>
+    <div class="stat">
+      <b>0.231</b>
+      <span>PR-AUC, 5-fold GroupKFold — double the 0.114 base rate</span>
+    </div>
+    <div class="stat">
+      <b>99,343</b>
+      <span>encounters across 71,518 patients, split by patient so none leaks</span>
+    </div>
+  </div>
+
+  <div class="nav-cards">
+    <a class="nav-card" href="/about">
+      <b>About the model →</b>
+      <span>What it predicts, what it was trained on, how well it scores — and the three
+        subgroups where it measurably underperforms.</span>
+    </a>
+    <a class="nav-card" href="/how-it-works">
+      <b>How it works →</b>
+      <span>Leakage-safe splits, informative missingness, ICD-9 grouping, the
+        counterfactual driver method, and the live calibration check.</span>
+    </a>
+    <a class="nav-card" href="/try">
+      <b>Try it →</b>
+      <span>A three-step form built from the model's own schema. Three example patients
+        let you see it react without filling in 22 fields.</span>
+    </a>
+    <a class="nav-card" href="/ask">
+      <b>Ask AI →</b>
+      <span>An assistant with tool access to this model — it can look up performance
+        numbers and score a patient for you.</span>
+    </a>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Not for clinical use.</strong> This is a personal portfolio project. The data are
+    from 1999–2008; the model has not been externally validated, and it performs near chance
+    for patients aged 90+. Every prediction returns the limitations that apply to it.
+  </div>
+</main>
+</body>
+</html>

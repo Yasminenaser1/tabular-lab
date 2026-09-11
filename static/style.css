@@ -22,16 +22,38 @@
 
 * { box-sizing: border-box; }
 body {
-  margin: 0; padding: 2.5rem 1.25rem 4rem; min-height: 100vh;
+  margin: 0; padding: 0 1.25rem 4rem; min-height: 100vh;
   background: var(--bg); color: var(--ink); font: 15px/1.6 var(--body);
   -webkit-font-smoothing: antialiased;
 }
-main { max-width: 760px; margin: 0 auto; }
+main { max-width: 760px; margin: 0 auto; padding-top: 2.5rem; }
 h1 { font: 700 2.4rem/1.1 var(--display); letter-spacing: -.02em; margin: 0 0 .35rem; }
 #status { color: var(--muted); margin: 0 0 1.75rem; }
 
+/* ---- site header / nav (shared by every page) ---- */
+.site-header {
+  margin: 0 -1.25rem 0; padding: 0 1.25rem;
+  background: var(--card); border-bottom: 1px solid var(--line);
+}
+.site-header-inner {
+  max-width: 760px; margin: 0 auto; padding: .8rem 0;
+  display: flex; align-items: center; gap: 1rem 1.25rem; flex-wrap: wrap;
+}
+.brand {
+  font: 700 1rem var(--display); letter-spacing: -.01em;
+  color: var(--ink); text-decoration: none; white-space: nowrap;
+}
+.brand:hover { color: var(--accent-ink); }
+.site-nav { display: flex; flex-wrap: wrap; gap: .15rem; margin-right: auto; }
+.site-nav a {
+  font: 600 .85rem var(--body); color: var(--muted); text-decoration: none;
+  padding: .35rem .6rem; border-radius: 6px; white-space: nowrap;
+}
+.site-nav a:hover { color: var(--ink); background: var(--card-2); }
+.site-nav a[aria-current="page"] { color: var(--accent-ink); background: var(--accent-soft); }
+
 /* ---- theme switch ---- */
-.theme { display: flex; justify-content: flex-end; gap: .25rem; margin-bottom: 1rem; }
+.theme { display: flex; justify-content: flex-end; gap: .25rem; }
 .theme button {
   font: 600 .78rem var(--body); color: var(--muted); background: var(--card);
   border: 1px solid var(--line); border-radius: 6px; padding: .35rem .7rem;
@@ -139,3 +161,130 @@ button:hover { background: var(--accent-ink); }
 .driver-delta { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .drivers .clear { font-size: .8rem; margin-top: .75rem; }
 @media (max-width: 520px) { .driver { grid-template-columns: 1fr 72px; } .driver-bar { display: none; } }
+
+/* ---- page content (home / about / how-it-works) ---- */
+.page-hero { margin-bottom: 2.25rem; }
+.eyebrow {
+  font: 700 .72rem var(--body); letter-spacing: .09em; text-transform: uppercase;
+  color: var(--accent-ink); margin: 0 0 .6rem;
+}
+.lede { font-size: 1.08rem; color: var(--muted); margin: .6rem 0 0; max-width: 60ch; }
+.cta-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+a.btn {
+  display: inline-block; font: 700 .95rem var(--body); text-decoration: none;
+  color: #fff; background: var(--accent); border-radius: 8px; padding: .7rem 1.5rem;
+}
+a.btn:hover { background: var(--accent-ink); }
+a.btn.ghost { color: var(--accent-ink); background: transparent; border: 1px solid var(--line); }
+a.btn.ghost:hover { background: var(--accent-soft); }
+
+/* headline numbers */
+.stat-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem; margin: 0 0 2.25rem;
+}
+.stat {
+  border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+  padding: 1.1rem 1.25rem;
+}
+.stat b {
+  display: block; font: 700 1.85rem/1.1 var(--display); letter-spacing: -.02em;
+  color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.stat span { display: block; font-size: .8rem; color: var(--muted); margin-top: .3rem; }
+
+/* link cards to the other pages */
+.nav-cards { display: grid; gap: .85rem; margin: 0 0 2.25rem; }
+.nav-card {
+  display: block; text-decoration: none; color: inherit;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+  padding: 1.1rem 1.25rem;
+}
+.nav-card:hover { border-color: var(--accent); background: var(--card-2); }
+.nav-card b { font: 700 1rem var(--display); color: var(--accent-ink); }
+.nav-card span { display: block; font-size: .88rem; color: var(--muted); margin-top: .25rem; }
+
+/* long-form sections */
+.prose h2 { font: 700 1.35rem var(--display); letter-spacing: -.01em; margin: 2.25rem 0 .6rem; }
+.prose h3 { font: 700 1rem var(--body); margin: 1.5rem 0 .4rem; }
+.prose p { margin: .7rem 0; max-width: 68ch; }
+.prose ul { margin: .7rem 0; padding-left: 1.15rem; max-width: 68ch; }
+.prose li { margin: .35rem 0; }
+.prose code {
+  font: 400 .85em ui-monospace, Menlo, monospace;
+  background: var(--card-2); border: 1px solid var(--line);
+  border-radius: 4px; padding: .05rem .3rem;
+}
+.prose a { color: var(--accent-ink); }
+.prose table { border-collapse: collapse; width: 100%; font-size: .9rem; margin: .9rem 0; }
+.prose th, .prose td {
+  text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.prose th { font: 600 .78rem var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.table-scroll { overflow-x: auto; }
+
+/* the "not for clinical use" strip */
+.disclaimer {
+  margin: 2.25rem 0 0; padding: 1rem 1.1rem; border-radius: 8px; font-size: .9rem;
+  border: 1px solid var(--critical); border-left-width: 4px; background: var(--critical-soft);
+}
+.disclaimer strong { font-weight: 700; }
+
+/* code blocks in long-form pages */
+.prose pre {
+  margin: .9rem 0; padding: .9rem 1.1rem; overflow-x: auto;
+  background: var(--card-2); border: 1px solid var(--line); border-radius: 10px;
+  font: 400 .82rem/1.55 ui-monospace, Menlo, monospace; color: var(--ink);
+}
+.prose pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+
+/* ---- Ask AI chat page ---- */
+.chat {
+  border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.chat-log {
+  min-height: 300px; max-height: 58vh; overflow-y: auto;
+  padding: 1.25rem; display: flex; flex-direction: column; gap: .75rem;
+}
+.bubble {
+  padding: .6rem .85rem; border-radius: 12px; max-width: 85%;
+  font-size: .93rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.bubble-you { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.bubble-ai  { align-self: flex-start; background: var(--card-2); color: var(--ink); border-bottom-left-radius: 4px; }
+.bubble-error { border: 1px solid var(--critical); background: var(--critical-soft); }
+.bubble-wait { color: var(--muted); font-style: italic; }
+
+/* which tools the assistant reached for */
+.tools { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .5rem; }
+.tool-badge {
+  font: 600 .68rem ui-monospace, Menlo, monospace; color: var(--accent-ink);
+  background: var(--accent-soft); border: 1px solid var(--line);
+  border-radius: 999px; padding: .12rem .5rem;
+}
+
+.chat-form { display: flex; gap: .6rem; padding: .85rem 1rem; border-top: 1px solid var(--line); }
+.chat-form input {
+  flex: 1; font: 500 .95rem var(--body); color: var(--ink);
+  padding: .65rem .8rem; border: 1px solid var(--line); border-radius: 8px; background: var(--card-2);
+}
+.chat-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.chat-form button:disabled { opacity: .5; cursor: default; }
+
+/* starter questions */
+.suggestions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.25rem; }
+.suggestions button { font-size: .82rem; padding: .45rem .8rem; }
+
+/* shown when the assistant backend is not configured */
+.offline {
+  margin: 0 0 1.25rem; padding: 1rem 1.1rem; border-radius: 8px; font-size: .9rem;
+  border: 1px solid var(--warning); border-left-width: 4px; background: var(--card-2);
+}
+
+/* visually hidden, still read by screen readers */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ask AI — 30-day readmission risk</title>
+  <script>
+    // Apply the saved theme before first paint, so a reload never flashes the wrong theme.
+    try {
+      const t = localStorage.getItem("theme");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <script src="/static/site.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href="/">Readmission Risk</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/">Home</a>
+      <a href="/about">About the model</a>
+      <a href="/how-it-works">How it works</a>
+      <a href="/try">Try it</a>
+      <a href="/ask" aria-current="page">Ask AI</a>
+    </nav>
+    <div class="theme" role="group" aria-label="Theme">
+      <button type="button" data-theme-choice="light">Light</button>
+      <button type="button" data-theme-choice="system">System</button>
+      <button type="button" data-theme-choice="dark">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="page-hero">
+    <p class="eyebrow">Ask AI</p>
+    <h1>Ask about this model</h1>
+    <p class="lede">
+      An assistant with tool access to the live service. It can look up the model's measured
+      performance, explain what drives a score, and run an actual prediction for a patient you
+      describe in plain English — the numbers come from the same endpoints the rest of the site
+      uses, not from the language model's memory.
+    </p>
+  </div>
+
+  <p class="offline" id="offline" hidden></p>
+
+  <div class="suggestions">
+    <button type="button" class="ghost" data-suggestion>How accurate is this model?</button>
+    <button type="button" class="ghost" data-suggestion>What drives the model most?</button>
+    <button type="button" class="ghost" data-suggestion>Risk for a 92-year-old with 3 prior inpatient stays?</button>
+    <button type="button" class="ghost" data-suggestion>Where does the model perform badly?</button>
+  </div>
+
+  <div class="chat">
+    <div class="chat-log" id="chat-log" role="log" aria-live="polite" aria-label="Conversation"></div>
+    <form class="chat-form" id="chat-form">
+      <label for="chat-input" class="sr-only">Your question</label>
+      <input id="chat-input" name="question" autocomplete="off"
+             placeholder="e.g. How accurate is this model?">
+      <button type="submit" id="chat-send">Send</button>
+    </form>
+  </div>
+
+  <div class="prose">
+    <h2>What it can reach</h2>
+    <p>
+      The assistant answers through six tools rather than from memory. Each reply shows which
+      of them it used:
+    </p>
+    <ul>
+      <li><code>predict_patient</code> — scores a patient, filling any field you didn't mention
+        with its typical value</li>
+      <li><code>what_if</code> — re-scores the same patient with one or more fields changed</li>
+      <li><code>get_evaluation</code> — held-out accuracy and the predicted-vs-observed rates
+        by risk band</li>
+      <li><code>get_model_info</code> — what the model is, what it was trained on, its top
+        drivers and its known limitations</li>
+      <li><code>check_fields</code> and <code>get_field_options</code> — validate a description
+        against the schema and list the valid values</li>
+    </ul>
+    <p>
+      It is a small model doing the talking, so treat the prose as a convenience and the
+      numbers as the authority — every figure it quotes can be checked on
+      <a href="/about">About the model</a> or against
+      <a href="/try">a prediction you run yourself</a>. Requests are rate-limited and capped in
+      length. Nothing you type is stored.
+    </p>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Not for clinical use.</strong> This is a personal portfolio project built on data
+    from 1999–2008. The model has not been externally validated and performs near chance for
+    patients aged 90+.
+  </div>
+</main>
+<script src="/static/ask.js" defer></script>
+</body>
+</html>

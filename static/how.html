@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How it works — 30-day readmission risk</title>
+  <script>
+    // Apply the saved theme before first paint, so a reload never flashes the wrong theme.
+    try {
+      const t = localStorage.getItem("theme");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <script src="/static/site.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href="/">Readmission Risk</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/">Home</a>
+      <a href="/about">About the model</a>
+      <a href="/how-it-works" aria-current="page">How it works</a>
+      <a href="/try">Try it</a>
+      <a href="/ask">Ask AI</a>
+    </nav>
+    <div class="theme" role="group" aria-label="Theme">
+      <button type="button" data-theme-choice="light">Light</button>
+      <button type="button" data-theme-choice="system">System</button>
+      <button type="button" data-theme-choice="dark">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="page-hero">
+    <p class="eyebrow">How it works</p>
+    <h1>Why this problem is harder than it looks</h1>
+    <p class="lede">
+      Most of the work in this project isn't the model — it's the handful of decisions that
+      stop a tabular dataset from quietly lying to you. Leaky splits, a flattering metric, and
+      missing values that mean something. Here's each one, and how the served app proves its
+      own numbers.
+    </p>
+  </div>
+
+  <div class="prose">
+    <h2>Grouped splits, because patients repeat</h2>
+    <p>
+      Patients appear multiple times in this dataset — roughly 30,000 repeat encounters. A
+      random row split puts the same patient in both train and test, and every score comes
+      back inflated for a reason that has nothing to do with the model. Every split here is
+      grouped by <code>patient_nbr</code>, and the code asserts the train and test patient
+      sets don't overlap rather than trusting that they don't.
+    </p>
+
+    <h2>PR-AUC, because the classes are imbalanced</h2>
+    <p>
+      Only 11.4% of encounters are 30-day readmissions. Accuracy is meaningless at that base
+      rate — predicting "no" for everyone scores 88.6% — and ROC-AUC is flattered by the large
+      negative class. Every result in this project is reported as PR-AUC, against a dummy
+      baseline that predicts the base rate.
+    </p>
+
+    <h2>Missing values that mean something</h2>
+    <p>
+      <code>A1Cresult</code> and <code>max_glu_serum</code> are 85–95% missing. But a test not
+      being ordered is itself a signal about the encounter, so they are encoded as their own
+      category rather than dropped or imputed away. <code>weight</code>, at 97% missing, is
+      dropped — there is nothing there to encode.
+    </p>
+
+    <h2>Diagnoses grouped, not one-hot encoded</h2>
+    <p>
+      <code>diag_1</code>, <code>diag_2</code> and <code>diag_3</code> hold about 700 distinct
+      ICD-9 codes each. Encoded raw that's thousands of near-empty columns; grouped into nine
+      clinical categories — circulatory, respiratory, diabetes, and so on — it's a feature the
+      model can actually learn from.
+    </p>
+    <p>
+      One more exclusion matters enough to have its own section on the model page: encounters
+      ending in death or hospice transfer are removed as structural negatives. See
+      <a href="/about">About the model</a>.
+    </p>
+
+    <h2>What drives the model</h2>
+    <p>Permutation importance — the drop in PR-AUC when a single feature is shuffled:</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Feature</th><th>Drop in PR-AUC</th></tr></thead>
+        <tbody>
+          <tr><td><code>number_inpatient</code></td><td>0.0795</td></tr>
+          <tr><td><code>discharge_disposition_id</code></td><td>0.0567</td></tr>
+          <tr><td><code>number_emergency</code></td><td>0.0099</td></tr>
+          <tr><td><code>diag_3_group</code></td><td>0.0058</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Prior hospitalizations dominate — past admissions are the strongest predictor of future
+      ones. Discharge destination is second, which is clinically sensible: where a patient goes
+      after release shapes whether they come back.
+    </p>
+
+    <h2>Every prediction is explained</h2>
+    <p>
+      Each response carries <code>drivers</code>: the fields moving this particular patient's
+      risk the most, computed by one-at-a-time counterfactuals. Each field is set to its
+      typical value (median or mode), the model is re-run, and the change in risk is reported.
+      All 22 what-ifs go through the model in a single batch, so an explanation costs about one
+      extra prediction. For a patient with four prior inpatient stays:
+    </p>
+<pre><code>"drivers": [
+  {"feature": "number_inpatient", "value": 4, "default": 0.0, "delta": 0.100},
+  {"feature": "time_in_hospital",  "value": 7, "default": 4.0, "delta": -0.051},
+  {"feature": "number_emergency",  "value": 2, "default": 0.0, "delta": 0.020}
+]</code></pre>
+    <p>
+      The method is deliberately simple, and its limitation is stated in the UI rather than
+      hidden: fields are varied one at a time, so interactions between them are not captured.
+      The ordering agrees with the permutation-importance table above, and a test asserts that
+      prior inpatient stays stay the top driver — a retrain that broke that would fail CI.
+    </p>
+
+    <h2>Validated against SHAP</h2>
+    <p>
+      A simple explanation method is only worth shipping if you know how wrong it is.
+      <code>shap_compare.py</code> computes TreeExplainer SHAP values for 2,000 held-out
+      patients, folding one-hot columns back into their source feature, and compares them
+      against the counterfactual drivers for the same patients.
+    </p>
+    <ul>
+      <li>Globally the two agree: Spearman rank correlation 0.70 across all 22 features, and
+        the same top three — <code>number_inpatient</code>,
+        <code>discharge_disposition_id</code>, <code>diag_1_group</code>.</li>
+      <li>Per patient they name the same lead driver 44% of the time, against 4.5% by chance.
+        That gap is the cost of ignoring interactions, quantified rather than assumed.</li>
+    </ul>
+    <p>
+      SHAP stays out of the served image on purpose: it would add roughly 100 MB to a 512 MB
+      container, for a method the UI can't explain in one sentence.
+    </p>
+
+    <h2>Accuracy is shown, not asserted</h2>
+    <p>
+      The served model is fit on the patient-grouped 80% split, and a 1,000-row sample of the
+      untouched 20% ships with the app. At startup <code>GET /evaluation</code> scores that
+      sample and groups the patients into the same low / elevated / high bands the UI uses. The
+      result page then shows, per band, how many patients there were, what the model predicted,
+      and how many were actually readmitted, with 95% Wilson intervals.
+    </p>
+    <p>
+      Observed readmission rises band by band — roughly 7% → 12% → 42% — and a test asserts
+      that ordering, so a retrain that broke it fails CI. Intervals are wide on a sample this
+      size, and the page says so instead of quietly rounding it away.
+    </p>
+
+    <h2>The form builds itself from the model</h2>
+    <p>
+      The <a href="/try">prediction wizard</a> is generated from <code>GET /schema</code>:
+      field names, valid values and defaults all come from the fitted pipeline, not from a
+      hand-written form, so the UI cannot drift out of sync with the model. Subgroup caveats
+      returned with a prediction are rendered in red above the score, and three example
+      patients let a visitor see the model react without filling in 22 fields.
+    </p>
+
+    <h2>The API</h2>
+    <ul>
+      <li><code>GET /schema</code> — field names and valid values, so a client can build its
+        form from the model</li>
+      <li><code>GET /metadata</code> — model version and cross-validated performance</li>
+      <li><code>GET /evaluation</code> — the held-out calibration check, by risk band</li>
+      <li><code>POST /predict</code> — probability, baseline rate, lift, risk band, caveats and
+        drivers</li>
+      <li><code>POST /ask</code> — the assistant behind <a href="/ask">Ask AI</a>, which reaches
+        the same functions through tools</li>
+    </ul>
+
+    <h2>Tests and deployment</h2>
+    <p>
+      <code>tests/test_api.py</code> exercises the service without needing the dataset:
+      schema/model agreement, the 422 on missing features, the subgroup caveats, and a
+      behavioral check that more prior inpatient stays raise predicted risk — a retrained model
+      that got that backwards would fail CI. <code>tests/test_split.py</code> needs the data and
+      skips when it is absent. GitHub Actions runs the suite on every push.
+    </p>
+    <p>
+      The <code>Dockerfile</code> builds a slim image from <code>requirements-api.txt</code> —
+      no plotting or download dependencies — and reads the port from <code>PORT</code>. Render
+      deploys from <code>main</code> automatically.
+    </p>
+<pre><code>uvicorn api:app --reload --port 8000</code></pre>
+    <p>
+      Built with scikit-learn 1.9.0; the pickled pipeline may not load under a different
+      version. Full reproduction steps are in the
+      <a href="https://github.com/Yasminenaser1/tabular-lab#reproducing">README</a>.
+    </p>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Not for clinical use.</strong> This is a personal portfolio project built on data
+    from 1999–2008. The model has not been externally validated and performs near chance for
+    patients aged 90+.
+  </div>
+</main>
+</body>
+</html>
