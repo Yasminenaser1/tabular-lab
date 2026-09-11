@@ -3,7 +3,7 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from sklearn.metrics import average_precision_score, roc_auc_score
 from fastapi.responses import FileResponse
@@ -199,3 +199,65 @@ def predict(req: PredictRequest):
         return score(req.features)
     except ValueError as e:
         raise HTTPException(422, str(e))
+
+
+# --- Ask AI endpoint -------------------------------------------------------
+import os
+import time
+from collections import defaultdict
+
+from pydantic import BaseModel as _BaseModel
+
+
+class AskRequest(_BaseModel):
+    messages: list[dict]
+
+
+_MAX_TOTAL_CHARS = 4000
+_MAX_MESSAGES = 20
+_RATE_LIMIT = 10          # requests per minute per client
+_RATE_WINDOW = 60
+_recent_calls: dict = defaultdict(list)
+
+
+def _rate_ok(client: str) -> bool:
+    now = time.time()
+    hits = [t for t in _recent_calls[client] if now - t < _RATE_WINDOW]
+    _recent_calls[client] = hits
+    if len(hits) >= _RATE_LIMIT:
+        return False
+    hits.append(now)
+    return True
+
+
+@app.get("/ask/status")
+def ask_status():
+    """Let the UI know whether the assistant is usable, and which backend."""
+    backend = os.getenv("ASSISTANT_BACKEND", "ollama").lower()
+    if backend == "groq":
+        available = bool(os.getenv("GROQ_API_KEY"))
+    else:
+        available = True  # assume local Ollama is reachable; the call will error friendly if not
+    return {"available": available, "backend": backend}
+
+
+@app.post("/ask")
+def ask_ai(req: AskRequest, request: Request):
+    if len(req.messages) > _MAX_MESSAGES:
+        raise HTTPException(413, "Too many messages in one request.")
+    total = sum(len(str(m.get("content", ""))) for m in req.messages)
+    if total > _MAX_TOTAL_CHARS:
+        raise HTTPException(413, "Message too long.")
+
+    client = request.client.host if request.client else "unknown"
+    if not _rate_ok(client):
+        raise HTTPException(429, "Too many requests. Please wait a moment.")
+
+    import agent  # lazy import so /predict etc. work even if no backend is configured
+    try:
+        answer, tool_log = agent.ask(req.messages)
+    except Exception:
+        raise HTTPException(503, "The assistant is unavailable right now. Try again shortly.")
+
+    tools_used = [entry["tool"] for entry in tool_log]
+    return {"answer": answer, "tools_used": tools_used}
