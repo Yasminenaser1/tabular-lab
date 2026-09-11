@@ -24,9 +24,27 @@ log = logging.getLogger("uvicorn.error")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+@app.middleware("http")
+async def always_revalidate(request: Request, call_next):
+    """Make the browser check with us before reusing a page or asset.
+
+    Neither the pages nor StaticFiles set Cache-Control, so browsers fall back
+    to heuristic caching and can keep showing a previous release's HTML and CSS
+    long after a deploy. "no-cache" does not mean "do not store": the browser
+    still caches, but revalidates first and gets a cheap 304 when nothing moved.
+    """
+    response = await call_next(request)
+    if request.url.path in PAGE_PATHS or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 # --- pages ----------------------------------------------------------------
 # One static file per page; each carries the same header/nav and marks its own
 # link with aria-current. Kept out of the OpenAPI schema, which documents the API.
+
+PAGE_PATHS = {"/", "/about", "/how-it-works", "/try", "/ask"}
+
 
 @app.get("/", include_in_schema=False)
 def home():
