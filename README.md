@@ -1,6 +1,8 @@
 # Hospital Readmission Prediction
 
-**Live demo:** https://readmission-risk.onrender.com
+**Live demo:** https://readmission-risk.onrender.com — a five-page site:
+what the model is and where it fails, how it works, a form to try it on a
+patient, and an AI assistant that answers with tool calls to the live API.
 
 
 [![CI](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml)
@@ -130,11 +132,20 @@ into a subgroup where the model underperforms, the response includes a caveat:
 A consumer is warned at the point of use rather than being expected to have
 read the documentation.
 
-The web UI at `/` is a three-step flow generated from `/schema` — fields,
-valid values and defaults come from the model, not a hand-written form — and
-renders those caveats in red above the score. Three example patients let a
-visitor see the model react without filling in 22 fields. Light, dark and
-system themes.
+The web UI is a five-page site — a landing page, `/about` (what the model is,
+how it scores, where it fails), `/how-it-works` (the grouped splits, PR-AUC
+and missingness decisions, each checked against the running service), `/try`,
+and `/ask`.
+
+`/try` is a three-step flow generated from `/schema` — fields, valid values and
+defaults come from the model, not a hand-written form — and renders those
+caveats in red above the score. Three example patients let a visitor see the
+model react without filling in 22 fields. Light, dark and system themes.
+
+`/ask` is an assistant with tool access to this service: it looks up measured
+performance, explains what drives a score, and runs real predictions for a
+patient described in plain English. The numbers come from the same endpoints
+the rest of the site uses, not from the language model's memory.
 
 **Every prediction is explained.** The response also carries `drivers`: the
 fields moving this patient's risk the most, computed by one-at-a-time
