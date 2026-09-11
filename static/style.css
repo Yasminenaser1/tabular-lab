@@ -1,14 +1,14 @@
 :root {
   color-scheme: light dark;
-  --bg:            light-dark(#faf6f0, #1a1410);
-  --card:          light-dark(#fffdfa, #241c15);
-  --card-2:        light-dark(#f5ede2, #2e241b);
-  --ink:           light-dark(#2b2018, #f2e9dd);
-  --muted:         light-dark(#7a6a58, #b3a291);
-  --line:          light-dark(#e8ddcd, #3a2e22);
-  --accent:        light-dark(#d2683f, #e88a5c);
-  --accent-ink:    light-dark(#b04e29, #f0a077);
-  --accent-soft:   light-dark(#fbe9df, #3a2519);
+  --bg:            light-dark(#f3f5f9, #0b1220);
+  --card:          light-dark(#ffffff, #131c2e);
+  --card-2:        light-dark(#f1f4f9, #1a2540);
+  --ink:           light-dark(#131a2a, #e8edf6);
+  --muted:         light-dark(#5d6b82, #8d99b2);
+  --line:          light-dark(#dfe4ee, #24304a);
+  --accent:        light-dark(#2f6fed, #4f8cff);
+  --accent-ink:    light-dark(#1f56c7, #7eaaff);
+  --accent-soft:   light-dark(#e6eeff, #16233f);
   --good:          light-dark(#16a34a, #22c55e);
   --warning:       light-dark(#d97706, #fab219);
   --critical:      light-dark(#dc2626, #ef4444);
