@@ -11,8 +11,8 @@
 - **Output:** probability of readmission within 30 days of discharge, plus a risk band
   (low < 15% ≤ elevated < 25% ≤ high), subgroup caveats, and per-prediction drivers.
 - **Version:** pipeline trained 2026-09-08 on the patient-grouped 80% split (79k encounters;
-  `models/pipeline.joblib`, scikit-learn 1.9.0). The remaining 20% is held out; a 1,000-row
-  sample of it ships with the app (`models/holdout_sample.csv`) for the live calibration check. Author: Yasmine Naser. Personal portfolio project.
+  `models/pipeline.joblib`, scikit-learn 1.9.0). The remaining 20% is held out and ships with
+  the app in full (19,802 encounters, `models/holdout_sample.csv`) for the live calibration check. Author: Yasmine Naser. Personal portfolio project.
 
 ## Intended use
 
@@ -44,12 +44,14 @@ All splits are grouped by `patient_nbr` so no patient appears in both train and 
 | PR-AUC, logistic regression | 0.2153 ± 0.0048 |
 | PR-AUC, base-rate dummy | 0.1139 ± 0.0019 |
 | ROC-AUC, held-out test | 0.669 |
+| PR-AUC, held-out test (19,802 encounters) | 0.229 |
 | Top vs bottom predicted-risk decile (readmission rate) | 27.8% vs 4.0% (6.9× lift) |
 
 Probabilities are calibrated (see `figures/results.png`), so a score can be read as a risk,
 not only a ranking.
-The served app recomputes calibration by risk band on the shipped held-out sample at startup
-(`GET /evaluation`) and shows it, with 95% intervals, on the result page. PR-AUC is reported because accuracy and ROC-AUC flatter any model at an
+The served app recomputes calibration by risk band on the full held-out split at startup
+(`GET /evaluation`) and shows it, with 95% intervals, on the result page: observed readmission
+of 8.5% / 18.0% / 35.4% against 8.8% / 18.6% / 33.7% predicted. PR-AUC is reported because accuracy and ROC-AUC flatter any model at an
 11% base rate.
 
 ## Where it fails

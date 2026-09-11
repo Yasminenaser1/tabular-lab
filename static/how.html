@@ -145,16 +145,22 @@
 
     <h2>Accuracy is shown, not asserted</h2>
     <p>
-      The served model is fit on the patient-grouped 80% split, and a 1,000-row sample of the
-      untouched 20% ships with the app. At startup <code>GET /evaluation</code> scores that
-      sample and groups the patients into the same low / elevated / high bands the UI uses. The
-      result page then shows, per band, how many patients there were, what the model predicted,
-      and how many were actually readmitted, with 95% Wilson intervals.
+      The served model is fit on the patient-grouped 80% split, and the untouched 20% ships
+      with the app in full — all 19,802 encounters. At startup <code>GET /evaluation</code>
+      scores them and groups the patients into the same low / elevated / high bands the UI
+      uses. The result page then shows, per band, how many patients there were, what the model
+      predicted, and how many were actually readmitted, with 95% Wilson intervals.
     </p>
     <p>
-      Observed readmission rises band by band — roughly 7% → 12% → 42% — and a test asserts
-      that ordering, so a retrain that broke it fails CI. Intervals are wide on a sample this
-      size, and the page says so instead of quietly rounding it away.
+      Observed readmission rises band by band — 8.5% → 18.0% → 35.4%, against 8.8% / 18.6% /
+      33.7% predicted — and a test asserts that ordering, so a retrain that broke it fails CI.
+    </p>
+    <p>
+      An earlier build shipped a random 1,000-row sample of the split instead. At that size the
+      draw itself moved PR-AUC by roughly ±0.03: the sample that shipped happened to report
+      0.299 against the 0.229 the model really scores, and made the elevated band look badly
+      over-predicted when it isn't. Shipping the whole split costs 1.9 MB and 0.05s at startup,
+      and removes the seed from the answer.
     </p>
 
     <h2>The form builds itself from the model</h2>

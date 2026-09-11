@@ -303,9 +303,9 @@
           <span class="h">Band</span><span class="h">Patients</span><span class="h">Observed vs predicted</span><span class="h">Readmitted (95% CI)</span>
           ${rows}
         </div>
-        <p class="foot">PR-AUC ${ev.pr_auc.toFixed(3)} · ROC-AUC ${ev.roc_auc.toFixed(3)} on this sample
+        <p class="foot">PR-AUC ${ev.pr_auc.toFixed(3)} · ROC-AUC ${ev.roc_auc.toFixed(3)} on the whole held-out split
           (5-fold CV on the full data: PR-AUC ${META.cv_pr_auc.toFixed(3)}).
-          Small bands carry wide intervals — a few patients move the high-band rate by several points.</p>
+          The high band is the smallest, so it carries the widest interval.</p>
       </div>`;
     }
 

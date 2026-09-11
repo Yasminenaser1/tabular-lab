@@ -181,14 +181,19 @@ explain in one sentence.
 ![SHAP vs counterfactual](figures/shap_vs_counterfactual.png)
 
 **Accuracy is shown, not asserted.** The served model is fit on the patient-grouped
-80% split, and a 1,000-row sample of the untouched 20% ships with the app. At
-startup `GET /evaluation` scores it and groups patients by the same low /
+80% split, and the untouched 20% — all 19,802 encounters — ships with the app.
+At startup `GET /evaluation` scores it and groups patients by the same low /
 elevated / high bands the UI uses; the result page shows, per band, how many
 patients, what the model predicted, and how many were actually readmitted,
 with 95% Wilson intervals. Observed readmission rises band by band
-(about 7% → 12% → 42%), and a test asserts that ordering so a retrain that
-breaks it fails CI. Intervals are wide on a sample this size, and the page
-says so.
+(8.5% → 18.0% → 35.4% against 8.8% / 18.6% / 33.7% predicted), and a test
+asserts that ordering so a retrain that breaks it fails CI.
+
+The app reports PR-AUC 0.229 and ROC-AUC 0.669 on that split — the same
+numbers as the table above, because it is the same held-out data. An earlier
+build shipped a random 1,000-row sample instead, which was enough for the
+draw itself to move PR-AUC by about ±0.03 and land on 0.299; the whole split
+ships now so the live numbers can't depend on a seed.
 
 Run it with:
 

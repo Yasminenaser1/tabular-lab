@@ -43,10 +43,13 @@ final = make(best).fit(X.iloc[tr], y.iloc[tr])
 Path("models").mkdir(exist_ok=True)
 joblib.dump(final, "models/pipeline.joblib")
 
-holdout = X.iloc[te].sample(1000, random_state=7).copy()
-holdout["readmitted_30"] = y.iloc[holdout.index].values
+# Ship the whole 20%, not a sample of it. At n=1000 the PR-AUC of a draw
+# varies by about +/-0.03 and its base rate by +/-1pp, so the choice of seed
+# moved the reported numbers more than a retrain would.
+holdout = X.iloc[te].copy()
+holdout["readmitted_30"] = y.iloc[te].values
 holdout.to_csv("models/holdout_sample.csv", index=False)
-print(f"held-out sample: {len(holdout)} rows, {holdout['readmitted_30'].mean():.3f} positive")
+print(f"held out: {len(holdout)} rows, {holdout['readmitted_30'].mean():.3f} positive")
 
 meta = {
     "model": best,

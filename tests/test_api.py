@@ -100,18 +100,6 @@ def test_evaluation_bands_are_ordered():
         assert lo <= b["observed_rate"] <= hi
 
 
-def test_evaluation_bands_are_ordered():
-    body = client.get("/evaluation").json()
-    bands = body["bands"]
-    assert [b["band"] for b in bands] == ["low", "elevated", "high"]
-    assert sum(b["n"] for b in bands) == body["n"]
-    observed = [b["observed_rate"] for b in bands]
-    assert observed == sorted(observed), "observed readmission must rise with predicted band"
-    for b in bands:
-        lo, hi = b["observed_ci95"]
-        assert lo <= b["observed_rate"] <= hi
-
-
 def test_schema_carries_code_labels():
     labels = client.get("/schema").json()["labels"]
     assert labels["admission_type_id"]["1"] == "Emergency"
