@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Yasminenaser1/tabular-lab/actions/workflows/ci.yml)
 
-**Live demo:** https://readmission-risk.onrender.com — a multi-page site with an interactive prediction wizard and an AI assistant that answers questions about the model. On Render's free tier, so the first load may be slow while the service wakes.
 **Model card:** [MODEL_CARD.md](MODEL_CARD.md)
 
 
